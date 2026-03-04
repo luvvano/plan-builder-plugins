@@ -1,19 +1,16 @@
 {
-  "id": "plan-builder",
-  "name": "Plan Builder",
-  "description": "Generates PROJECT.md and ROADMAP.md for coding tasks via sub-agent",
+  "id": "gsd-for-openclaw",
+  "name": "GSD for OpenClaw",
+  "description": "Spec-driven development: plan, execute, and verify coding workflows",
   "version": "1.0.0",
+  "skills": ["./skills"],
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
     "properties": {
-      "outputDir": {
+      "planningDir": {
         "type": "string",
-        "description": "Directory to write plan files (default: .planning)"
-      },
-      "defaultPhases": {
-        "type": "number",
-        "description": "Number of roadmap phases to generate (default: 4)"
+        "description": "Directory for GSD planning files (default: .planning)"
       }
     }
   }
