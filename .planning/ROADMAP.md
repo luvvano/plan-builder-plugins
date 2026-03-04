@@ -12,7 +12,7 @@ Port the full GSD spec-driven development system from its Claude Code implementa
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Scaffold the plugin, bundle gsd-tools.cjs, validate command naming and orchestration pattern end-to-end
+- [x] **Phase 1: Foundation** - Scaffold the plugin, bundle gsd-tools.cjs, validate command naming and orchestration pattern end-to-end
 - [ ] **Phase 2: Core Workflows** - Port the 4 primary GSD commands, all agent roles, and the full orchestration model
 - [ ] **Phase 3: Full Command Set** - Scale out to all 24 commands, bundle all templates and references, add state query tools
 - [ ] **Phase 4: Lifecycle and Distribution** - Add hooks, lifecycle services, install scripts, and ClawHub packaging
@@ -28,7 +28,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `node bin/gsd-tools.cjs` resolves correctly from within the plugin at runtime via `GSD_TOOLS_PATH` — no hardcoded absolute paths remain
   3. A colon-namespaced command (e.g., `/gsd:new-project`) registers and invokes successfully, confirming the naming convention for all 24 commands
   4. One complete GSD workflow (new-project or plan-phase) runs end-to-end, confirming the inline agent context injection pattern works as the Task() replacement
-**Plans**: TBD
+**Plans**: 01-01 (scaffold), 01-02 (commands + SKILL.md) — COMPLETE
 
 ### Phase 2: Core Workflows
 **Goal**: The four primary GSD commands work end-to-end in OpenClaw with all agent roles and sequential wave execution
@@ -70,7 +70,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 2/2 | Complete | 2026-03-04 |
 | 2. Core Workflows | 0/TBD | Not started | - |
 | 3. Full Command Set | 0/TBD | Not started | - |
 | 4. Lifecycle and Distribution | 0/TBD | Not started | - |
