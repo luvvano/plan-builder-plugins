@@ -1,0 +1,16 @@
+{
+  "name": "plan-builder-openclaw",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "OpenClaw plugin: generates project plans for coding tasks",
+  "main": "src/index.ts",
+  "openclaw": {
+    "extensions": ["./src/index.ts"]
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

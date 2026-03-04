@@ -1,0 +1,20 @@
+{
+  "id": "plan-builder",
+  "name": "Plan Builder",
+  "description": "Generates PROJECT.md and ROADMAP.md for coding tasks via sub-agent",
+  "version": "1.0.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "outputDir": {
+        "type": "string",
+        "description": "Directory to write plan files (default: .planning)"
+      },
+      "defaultPhases": {
+        "type": "number",
+        "description": "Number of roadmap phases to generate (default: 4)"
+      }
+    }
+  }
+}
