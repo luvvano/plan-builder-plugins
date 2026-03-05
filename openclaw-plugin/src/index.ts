@@ -10,7 +10,8 @@
 
 import { join } from "node:path";
 import { execSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync, cpSync } from "node:fs";
+import { homedir } from "node:os";
 import { Type } from "@sinclair/typebox";
 import type { PluginContext } from "openclaw/plugin-sdk/core";
 
@@ -316,6 +317,60 @@ export default function gsdPlugin(api: PluginContext): void {
     },
   });
 
+  // ── /gsd_project_list ─────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_project_list",
+    description: "List, add, or remove tracked GSD projects. Usage: [list|add|remove] [name/path]",
+    acceptsArgs: true,
+    requireAuth: false,
+    handler(args) {
+      const parts = (args ?? "").trim().split(/\s+/).filter(Boolean);
+      const action = parts[0] || "list";
+      const target = parts.slice(1).join(" ");
+      const tPath = tp();
+
+      if (action === "remove" && !target) {
+        return { text: `Usage: <b>/gsd_project_list remove &lt;name&gt;</b>` };
+      }
+
+      try {
+        let subcmd: string;
+        if (action === "add") {
+          subcmd = target ? `project-list add "${target}"` : `project-list add`;
+        } else if (action === "remove") {
+          subcmd = `project-list remove "${target}"`;
+        } else {
+          subcmd = `project-list list`;
+        }
+
+        const raw = execSync(`node "${tPath}" ${subcmd}`, { encoding: "utf8", timeout: 10000 });
+        const result = JSON.parse(raw) as Record<string, unknown>;
+
+        if (action === "list") {
+          const projects = (result.projects ?? []) as Array<{name: string; path: string; added: string; last_active: string}>;
+          if (projects.length === 0) {
+            return { text: fmtHtml(`<b>GSD Projects</b>\n\nNo projects tracked yet.\n\nAdd current project: <b>/gsd_project_list add</b>`) };
+          }
+          const rows = projects.map((p, i) =>
+            `${i + 1}. <b>${p.name}</b>\n   <code>${p.path}</code>\n   Added: ${p.added} · Active: ${p.last_active}`
+          ).join("\n\n");
+          return { text: fmtHtml(`<b>GSD Projects</b> (${projects.length})\n\n${rows}\n\n/gsd_project_list add — register\n/gsd_project_list remove &lt;name&gt; — unregister`) };
+        }
+        if (action === "add") {
+          return { text: fmtHtml(`✅ Registered: <b>${result.name as string}</b>\n<code>${result.path as string}</code>`) };
+        }
+        if (action === "remove") {
+          return result.removed
+            ? { text: `✅ Removed: <b>${target}</b>` }
+            : { text: `Project not found: <b>${target}</b>\n\nRun <b>/gsd_project_list</b> to see tracked projects.` };
+        }
+        return { text: `<pre>${JSON.stringify(result, null, 2)}</pre>` };
+      } catch (e) {
+        return { text: `<b>Error:</b> <code>${String(e).slice(0, 300)}</code>` };
+      }
+    },
+  });
+
   // ── /gsd_cleanup ──────────────────────────────────────────────────────────
   api.registerCommand({
     name: "gsd_cleanup",
@@ -345,6 +400,77 @@ export default function gsdPlugin(api: PluginContext): void {
       } catch (e) {
         return { text: `<b>Error:</b> <code>${String(e).slice(0, 200)}</code>` };
       }
+    },
+  });
+
+  // ── /gsd_update ───────────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_update",
+    description: "Pull latest GSD plugin from GitHub and reinstall",
+    acceptsArgs: false,
+    requireAuth: false,
+    handler() {
+      const home = homedir();
+      const repoDir = join(home, "projects", "plan-builder-plugins");
+      const pluginSrc = join(repoDir, "openclaw-plugin");
+      const installDir = join(home, ".openclaw", "extensions", "gsd-for-openclaw");
+      const log: string[] = [];
+
+      let oldVersion = "unknown";
+      try {
+        const cur = JSON.parse(readFileSync(join(installDir, "openclaw.plugin.json"), "utf8")) as { version?: string };
+        oldVersion = cur.version ?? "unknown";
+      } catch { /* first install */ }
+
+      try {
+        if (existsSync(join(repoDir, ".git"))) {
+          const pullOut = execSync(`git -C "${repoDir}" pull --ff-only`, { encoding: "utf8", timeout: 30000 });
+          const msg = (pullOut.trim() || "Already up to date.").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          log.push(`📡 ${msg}`);
+        } else {
+          log.push(`📡 Cloning repo...`);
+          execSync(`git clone https://github.com/luvvano/plan-builder-plugins "${repoDir}"`, { encoding: "utf8", timeout: 60000 });
+          log.push(`Cloned successfully.`);
+        }
+      } catch (e) {
+        return { text: `❌ Git error:\n<code>${String(e).slice(0, 300)}</code>` };
+      }
+
+      let commitHash = "";
+      try { commitHash = execSync(`git -C "${repoDir}" rev-parse --short HEAD`, { encoding: "utf8" }).trim(); } catch { /* ignore */ }
+
+      let newVersion = "unknown";
+      try {
+        const nxt = JSON.parse(readFileSync(join(pluginSrc, "openclaw.plugin.json"), "utf8")) as { version?: string };
+        newVersion = nxt.version ?? "unknown";
+      } catch { /* ignore */ }
+
+      try {
+        execSync(`rsync -a --exclude=node_modules "${pluginSrc}/" "${installDir}/"`, { encoding: "utf8", timeout: 30000 });
+        log.push(`📦 Files copied (rsync)`);
+      } catch {
+        try {
+          cpSync(pluginSrc, installDir, { recursive: true, filter: (s: string) => !s.includes("node_modules") });
+          log.push(`📦 Files copied (cpSync)`);
+        } catch (e2) {
+          return { text: `❌ Copy error:\n<code>${String(e2).slice(0, 200)}</code>` };
+        }
+      }
+
+      try {
+        execSync("openclaw gateway restart", { encoding: "utf8", timeout: 15000 });
+        log.push(`🔄 Gateway restarted`);
+      } catch {
+        log.push(`⚠️ Gateway restart failed — run: <code>openclaw gateway restart</code>`);
+      }
+
+      const versionLine = oldVersion === newVersion
+        ? `Version: <b>${newVersion}</b>${commitHash ? ` @ <code>${commitHash}</code>` : ""}`
+        : `Version: <b>${oldVersion}</b> → <b>${newVersion}</b>${commitHash ? ` @ <code>${commitHash}</code>` : ""}`;
+
+      return { text: fmtHtml([
+        `✅ <b>GSD plugin updated</b>`, ``, versionLine, ``, ...log, ``, `Changes are live.`,
+      ].join("\n")) };
     },
   });
 
