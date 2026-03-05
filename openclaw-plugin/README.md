@@ -1,35 +1,47 @@
-# plan-builder — OpenClaw Plugin
+# GSD for OpenClaw
 
-Generates structured project plans for coding tasks. Given a task description, it produces two files:
-
-- `.planning/PROJECT.md` — goal, tech stack, constraints, out-of-scope
-- `.planning/ROADMAP.md` — phased delivery plan with concrete, testable deliverables
+Spec-driven development plugin for OpenClaw providing 26 commands for planning, executing, and verifying coding workflows.
 
 ---
 
-## Install
+## Prerequisites
 
-1. Copy the plugin directory to your extensions folder:
-
-   ```bash
-   cp -r plan-builder-openclaw/ ~/.openclaw/extensions/plan-builder/
-   ```
-
-2. Restart the gateway:
-
-   ```bash
-   openclaw gateway restart
-   ```
-
-3. Verify the plugin loaded:
-
-   ```bash
-   openclaw plugins list | grep plan-builder
-   ```
+- **OpenClaw** >= 2026.2.3-1
+- **Node.js** (required for `gsd-tools.cjs`)
 
 ---
 
-## Config
+## Installation
+
+### Step 1: Clone the repository
+
+```bash
+git clone https://github.com/luvvano/plan-builder-plugins.git
+```
+
+### Step 2: Copy the plugin into OpenClaw extensions
+
+```bash
+cp -r plan-builder-plugins/openclaw-plugin ~/.openclaw/extensions/gsd-for-openclaw
+```
+
+### Step 3: Restart the gateway
+
+```bash
+openclaw gateway restart
+```
+
+### Step 4: Verify installation
+
+```bash
+openclaw plugins list
+```
+
+Should show `gsd-for-openclaw`. Then in chat, run `/gsd:help` — it should list all 26 commands.
+
+---
+
+## Configuration
 
 Add to `~/.openclaw/openclaw.json` under `plugins.entries`:
 
@@ -37,10 +49,9 @@ Add to `~/.openclaw/openclaw.json` under `plugins.entries`:
 {
   "plugins": {
     "entries": {
-      "plan-builder": {
+      "gsd-for-openclaw": {
         "config": {
-          "outputDir": ".planning",
-          "defaultPhases": 4
+          "planningDir": ".planning"
         }
       }
     }
@@ -50,14 +61,13 @@ Add to `~/.openclaw/openclaw.json` under `plugins.entries`:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `outputDir` | string | `.planning` | Directory where `PROJECT.md` and `ROADMAP.md` are written |
-| `defaultPhases` | number | `4` | Number of roadmap phases to generate |
+| `planningDir` | string | `.planning` | Directory where GSD planning files are stored |
 
 ---
 
-## Enable the tool for an agent
+## Enabling tools for agents
 
-The `plan_builder` tool is marked `optional` — you must explicitly allow it per agent:
+The plugin registers 4 tools with `optional: true`. To allow an agent to use them, add to your `~/.openclaw/openclaw.json`:
 
 ```json
 {
@@ -66,7 +76,12 @@ The `plan_builder` tool is marked `optional` — you must explicitly allow it pe
       {
         "id": "main",
         "tools": {
-          "allow": ["plan_builder"]
+          "allow": [
+            "gsd_phase_status",
+            "gsd_config_get",
+            "gsd_roadmap_summary",
+            "gsd_state_snapshot"
+          ]
         }
       }
     ]
@@ -76,48 +91,84 @@ The `plan_builder` tool is marked `optional` — you must explicitly allow it pe
 
 ---
 
-## Usage
+## Available commands
 
-### Slash command
+**Project Initialization:**
+- `/gsd:new-project` — Full initialization: research, requirements, roadmap
+- `/gsd:map-codebase` — Generate architectural map of existing codebase
 
-```
-/plan Build a REST API with JWT auth and Postgres
-```
+**Phase Planning:**
+- `/gsd:discuss-phase <N>` — Capture design decisions before planning
+- `/gsd:research-phase <N>` — Research phase domain (niche/complex)
+- `/gsd:list-phase-assumptions <N>` — Preview intended approach
+- `/gsd:plan-phase <N>` — Research + plan + verify for a phase
 
-The command returns a prompt you can paste into chat. The agent then calls `plan_builder` which returns sub-agent instructions to write the plan files.
+**Execution:**
+- `/gsd:execute-phase <N>` — Execute all plans in a phase
 
-### Direct agent request
+**Quick Mode:**
+- `/gsd:quick` — Ad-hoc task with GSD guarantees
 
-Ask the agent directly:
+**Roadmap Management:**
+- `/gsd:add-phase <description>` — Add phase to end of roadmap
+- `/gsd:insert-phase <N> <desc>` — Insert phase at position
+- `/gsd:remove-phase <N>` — Remove phase from roadmap
 
-```
-Use plan_builder to plan: Build a CLI tool for managing Docker containers
-```
+**Milestones:**
+- `/gsd:new-milestone <name>` — Start new milestone
+- `/gsd:complete-milestone <ver>` — Complete and archive milestone
+- `/gsd:progress` — Show milestone/phase progress
 
-The agent calls `plan_builder`, receives the sub-agent instructions, and executes them to create the files.
+**Session Management:**
+- `/gsd:resume-work` — Resume from last saved state
+- `/gsd:pause-work` — Save state for later resumption
 
-### Skill trigger
+**Debugging:**
+- `/gsd:debug [issue]` — Systematic debugging workflow
 
-If the `skills/planning/SKILL.md` skill is loaded, the agent automatically uses `plan_builder` when you say things like:
+**Todos:**
+- `/gsd:add-todo [description]` — Add TODO to STATE.md
+- `/gsd:check-todos [area]` — Review pending TODOs
 
-- "plan a REST API with auth"
-- "create a roadmap for my CLI tool"
-- "help me structure this project"
+**Verification:**
+- `/gsd:verify-work [phase]` — Verify phase completion
+- `/gsd:audit-milestone [version]` — Full milestone audit
+- `/gsd:plan-milestone-gaps` — Plan gap closure for unmet requirements
+
+**Testing:**
+- `/gsd:add-tests` — Add test coverage for code areas
+
+**Configuration:**
+- `/gsd:settings` — Display current GSD config
+- `/gsd:set-profile <profile>` — Set model profile
+- `/gsd:health` — Project health check
+
+**Utility:**
+- `/gsd:cleanup` — Clean up GSD artifacts
+- `/gsd:help` — List all commands
+- `/gsd:status` — Show project status
 
 ---
 
 ## Project structure
 
 ```
-plan-builder-openclaw/
-├── openclaw.plugin.json   # Plugin manifest
-├── package.json           # npm metadata + openclaw extensions pointer
-├── tsconfig.json          # TypeScript config
+openclaw-plugin/
+├── openclaw.plugin.json
+├── package.json
+├── tsconfig.json
 ├── src/
-│   └── index.ts           # Plugin entry point
+│   └── index.ts
+├── bin/
+│   └── gsd-tools.cjs
+├── agents/
+│   └── (12 agent definitions)
 ├── skills/
-│   └── planning/
-│       └── SKILL.md       # Skill definition for auto-triggering
+│   ├── planning/
+│   └── workflows/
+│       └── (26 workflow commands)
+├── templates/
+├── workflows/
 └── README.md
 ```
 
@@ -125,7 +176,6 @@ plan-builder-openclaw/
 
 ## How it works
 
-1. `/plan <task>` → returns a one-liner prompt to paste into chat
-2. Agent calls `plan_builder(task, output_dir, phases)` → tool returns detailed sub-agent instructions
-3. Agent (or sub-agent) executes the instructions → writes `PROJECT.md` + `ROADMAP.md`
-4. Output is tailored to project type: API / CLI / frontend / other
+The plugin registers a lifecycle service (`gsd-lifecycle`) that sets `GSD_TOOLS_PATH` and `GSD_HOME` environment variables on startup. It registers two slash commands (`/gsd:help` and `/gsd:status`) and four query tools for programmatic state access.
+
+All 26 workflow commands are defined as `SKILL.md` files in the `skills/` directory. Users interact via `/gsd:*` slash commands in chat. The plugin orchestrates planning, execution, and verification of coding tasks using a spec-driven approach: requirements are captured upfront, work is planned in phases, executed with per-task commits, and verified against success criteria.
