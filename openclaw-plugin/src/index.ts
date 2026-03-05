@@ -402,7 +402,13 @@ export default function gsdPlugin(api: PluginContext): void {
       try {
         let subcmd: string;
         if (action === "add") {
-          subcmd = target ? `project-list add "${target}"` : `project-list add`;
+          let resolvedTarget = target;
+          if (target && !target.includes("/")) {
+            // bare name — try ~/projects/<name> first, then ~/projects/<name>
+            const inProjects = join(homedir(), "projects", target);
+            resolvedTarget = existsSync(inProjects) ? inProjects : join(homedir(), "projects", target);
+          }
+          subcmd = resolvedTarget ? `project-list add "${resolvedTarget}"` : `project-list add "${resolveActiveProjectDir()}"`;
         } else if (action === "remove") {
           subcmd = `project-list remove "${target}"`;
         } else {
