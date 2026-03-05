@@ -348,6 +348,7 @@ export default function gsdPlugin(api: PluginContext): void {
         `/gsd_status — Project status`,
         `/gsd_update — Update plugin from GitHub`,
         `/gsd_project_list — Tracked projects`,
+        `/gsd_set_project <name|#N> — Switch active project`,
         `/gsd_cleanup — Clean up artifacts`,
         `/gsd_help — This listing`,
       ].join("\n")) };
@@ -430,6 +431,69 @@ export default function gsdPlugin(api: PluginContext): void {
             : { text: `Project not found: **${target}**\n\nRun **/gsd_project_list** to see tracked projects.` };
         }
         return { text: JSON.stringify(result, null, 2) };
+      } catch (e) {
+        return { text: `Error: ${String(e).slice(0, 300)}` };
+      }
+    },
+  });
+
+  // ── /gsd_set_project ──────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_set_project",
+    description: "Set the active GSD project by name or number. Usage: gsd_set_project <name|#N>",
+    acceptsArgs: true,
+    requireAuth: false,
+    handler(ctx) {
+      const query = ((ctx as {args?: string}).args ?? "").trim();
+      if (!query) {
+        // Show list with numbers for easy selection
+        try {
+          const tPath = tp();
+          const raw = execSync(`node "${tPath}" project-list list`, { encoding: "utf8", timeout: 10000 });
+          const result = JSON.parse(raw) as { projects?: Array<{name: string; path: string; last_active: string}> };
+          const projects = result.projects ?? [];
+          if (projects.length === 0) {
+            return { text: `No projects tracked.\n\nAdd one: **/gsd_project_list add**` };
+          }
+          const rows = projects.map((p, i) => `${i + 1}. **${p.name}**\n   ${p.path}`).join("\n\n");
+          return { text: fmt(`**Set Active Project**\n\nUsage: /gsd_set_project <name or #N>\n\n${rows}`) };
+        } catch (e) {
+          return { text: `Error: ${String(e).slice(0, 200)}` };
+        }
+      }
+      try {
+        const tPath = tp();
+        const raw = execSync(`node "${tPath}" project-list list`, { encoding: "utf8", timeout: 10000 });
+        const result = JSON.parse(raw) as { projects?: Array<{name: string; path: string}> };
+        const projects = result.projects ?? [];
+
+        let match: { name: string; path: string } | undefined;
+        // Match by #N index
+        const indexMatch = query.match(/^#?(\d+)$/);
+        if (indexMatch) {
+          const idx = parseInt(indexMatch[1], 10) - 1;
+          match = projects[idx];
+        } else {
+          // Match by name (case-insensitive substring)
+          match = projects.find(p => p.name.toLowerCase().includes(query.toLowerCase()));
+        }
+
+        if (!match) {
+          return { text: `Project not found: **${query}**\n\nRun /gsd_set_project to see options.` };
+        }
+
+        // Update last_active to make it the "most recent"
+        const registryPath = join(homedir(), ".gsd", "projects.json");
+        const registry = JSON.parse(readFileSync(registryPath, "utf8")) as { version: number; projects: Array<{name: string; path: string; added: string; last_active: string}> };
+        registry.projects = registry.projects.map(p =>
+          p.path === match!.path
+            ? { ...p, last_active: new Date().toISOString().slice(0, 10) }
+            : p
+        );
+        const { writeFileSync } = require("fs") as typeof import("fs");
+        writeFileSync(registryPath, JSON.stringify(registry, null, 2), "utf8");
+
+        return { text: fmt(`✅ **Active project set:**\n\n**${match.name}**\n${match.path}\n\nRun /gsd_status to confirm.`) };
       } catch (e) {
         return { text: `Error: ${String(e).slice(0, 300)}` };
       }
@@ -568,6 +632,7 @@ export default function gsdPlugin(api: PluginContext): void {
     { command: "gsd_cleanup",             description: "Clean up temp research files" },
     { command: "gsd_update",              description: "Update plugin from GitHub" },
     { command: "gsd_project_list",        description: "List or manage tracked projects" },
+    { command: "gsd_set_project",         description: "Set the active GSD project" },
     // Workflow (Phase 5)
     { command: "gsd_quick",               description: "Run an ad-hoc GSD task" },
     { command: "gsd_new_project",         description: "Initialize a new GSD project" },
@@ -590,7 +655,8 @@ export default function gsdPlugin(api: PluginContext): void {
   ] as const;
 
   api.on("gateway_start", async () => {
-    const tgCfg = (api.config as Record<string, unknown>).telegram as Record<string, unknown> | undefined;
+    const channels = (api.config as Record<string, unknown>).channels as Record<string, unknown> | undefined;
+    const tgCfg = channels?.telegram as Record<string, unknown> | undefined;
     const token = tgCfg?.botToken as string | undefined;
     if (!token) {
       api.logger.warn("[gsd] setMyCommands skipped: no Telegram botToken in config");
