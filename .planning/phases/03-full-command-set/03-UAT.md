@@ -3,22 +3,22 @@ status: testing
 phase: 03-full-command-set
 source: 03-01-SUMMARY.md, 03-02-SUMMARY.md, 03-03-SUMMARY.md, 03-04-SUMMARY.md, 03-05-SUMMARY.md
 started: 2026-03-05T09:30:00Z
-updated: 2026-03-05T09:30:00Z
+updated: 2026-03-05T09:32:00Z
 ---
 
 ## Current Test
 
-number: 1
-name: No absolute paths in any skill file
+number: 2
+name: gsd:help lists all commands by stage
 expected: |
-  Running `grep -r "/Users/" openclaw-plugin/skills/` returns zero matches. All stage files use `$GSD_TOOLS_PATH` instead of hardcoded paths.
+  Running `/gsd:help` displays a categorized listing of 26 commands organized into ~14 workflow stages.
 awaiting: user response
 
 ## Tests
 
 ### 1. No absolute paths in any skill file
 expected: Running `grep -r "/Users/" openclaw-plugin/skills/` returns zero matches. All stage files use `$GSD_TOOLS_PATH` instead of hardcoded paths.
-result: [pending]
+result: pass
 
 ### 2. gsd:help lists all commands by stage
 expected: Running `/gsd:help` displays a categorized listing of 26 commands organized into ~14 workflow stages (Project Initialization, Phase Planning, Execution, etc.)
@@ -51,9 +51,9 @@ result: [pending]
 ## Summary
 
 total: 8
-passed: 0
+passed: 1
 issues: 0
-pending: 8
+pending: 7
 skipped: 0
 
 ## Gaps
