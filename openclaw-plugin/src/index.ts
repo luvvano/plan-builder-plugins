@@ -9,7 +9,7 @@
  */
 
 import { join } from "node:path";
-import { execSync } from "node:child_process";
+import { execSync, spawn } from "node:child_process";
 import { readFileSync, existsSync, cpSync } from "node:fs";
 import { homedir } from "node:os";
 import { Type } from "@sinclair/typebox";
@@ -587,10 +587,15 @@ export default function gsdPlugin(api: PluginContext): void {
       }
 
       try {
-        execSync("openclaw gateway restart", { encoding: "utf8", timeout: 15000 });
-        log.push(`🔄 Gateway restarted`);
+        // Detached spawn — outlives the gateway process being killed
+        const child = spawn("openclaw", ["gateway", "restart"], {
+          detached: true,
+          stdio: "ignore",
+        });
+        child.unref();
+        log.push(`🔄 Gateway restarting...`);
       } catch {
-        log.push("⚠️ Gateway restart failed — run: openclaw gateway restart");
+        log.push("⚠️ Gateway restart failed — run: openclaw gateway restart manually");
       }
 
       const versionLine = oldVersion === newVersion
