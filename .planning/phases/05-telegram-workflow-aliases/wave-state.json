@@ -1,0 +1,9 @@
+{
+  "phase": "05",
+  "plans": {
+    "05-01": { "status": "complete", "commit": "8fb75a8", "summary": "05-01-SUMMARY.md" },
+    "05-02": { "status": "complete", "commit": "205d372", "summary": "05-02-SUMMARY.md" }
+  },
+  "waves_complete": [1, 2],
+  "phase_complete": true
+}
