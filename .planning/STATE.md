@@ -43,7 +43,7 @@ Progress: [███████░░░] 71% (5/7 plans)
 | 1 | 2/2 | ~8 min | ~4 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~5 min), 01-02 (~3 min), 02-01 (~1 min), 02-05 (~3 min)
+- Last 5 plans: 01-02 (~3 min), 02-01 (~1 min), 02-04 (~3 min), 02-05 (~3 min)
 - Trend: Fast execution
 
 *Updated after each plan completion*
@@ -51,7 +51,7 @@ Progress: [███████░░░] 71% (5/7 plans)
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 2/2 | ~8 min | ~4 min |
-| 2 | 2/5 | ~4 min | ~2 min |
+| 2 | 3/5 | ~7 min | ~2 min |
 
 ## Accumulated Context
 

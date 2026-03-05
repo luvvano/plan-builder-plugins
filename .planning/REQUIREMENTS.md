@@ -33,8 +33,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Orchestration
 
 - [ ] **ORCH-01**: Workflow orchestration works via inline agent context injection (replacing Claude Code's Task() primitive)
-- [ ] **ORCH-02**: Execute-phase uses sequential wave execution with wave-state.json tracking
-- [ ] **ORCH-03**: Interrupted workflows are resumable by reading wave-state.json
+- [x] **ORCH-02**: Execute-phase uses sequential wave execution with wave-state.json tracking
+- [x] **ORCH-03**: Interrupted workflows are resumable by reading wave-state.json
 - [x] **ORCH-04**: State queries (phase status, config reads) are registered as `registerTool()` entries returning structured JSON
 
 ### Templates and References
@@ -97,8 +97,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | AGNT-02 | Phase 2 | Complete |
 | AGNT-03 | Phase 2 | Pending |
 | ORCH-01 | Phase 2 | Pending |
-| ORCH-02 | Phase 2 | Pending |
-| ORCH-03 | Phase 2 | Pending |
+| ORCH-02 | Phase 2 | Complete |
+| ORCH-03 | Phase 2 | Complete |
 | ORCH-04 | Phase 2 | Complete |
 | CMD-01 | Phase 3 | Pending |
 | CMD-02 | Phase 3 | Pending |
