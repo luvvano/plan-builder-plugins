@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 
 ## Current Position
 
-Phase: 2 of 4 (Core Workflows) — IN PROGRESS
-Plan: 5 of 5 in current phase
-Status: All Phase 2 plans complete
-Last activity: 2026-03-05 — Plan 02-02: /gsd:new-project orchestrator + stage-setup + stage-roadmap with 3 embedded agent roles
+Phase: 3 of 4 (Full Command Set) — IN PROGRESS
+Plan: 1 of ? in current phase
+Status: Phase 3 started — Plan 03-01 complete
+Last activity: 2026-03-05 — Plan 03-01: Replace absolute paths in Phase 2 stage files with portable $GSD_TOOLS_PATH references
 
-Progress: [███████░░░] 71% (5/7 plans)
+Progress: [████████░░] 80% (6/7+ plans)
 
 ## Performance Metrics
 
@@ -77,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 02]: Embed full agent roles verbatim in stage SKILL.md files for plugin portability
 - [Phase 02]: Orchestrator + stage SKILL.md pattern: user-invocable orchestrator @-references non-invocable stages
 - [Phase 02]: Agent roles embedded verbatim in stage files for self-containment; orchestrator uses relative @./stage-*.md at point of use
+- [Phase 03-01]: All gsd-tools.cjs calls in stage files use node "$GSD_TOOLS_PATH" — machine-specific absolute paths eliminated
+- [Phase 03-01]: PLAN template @-references to execute-plan.md/summary.md removed; stage-executor.md is self-contained with all execution logic
 
 ### Pending Todos
 
@@ -91,5 +93,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-05
-Stopped at: Completed 02-02-PLAN.md
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None

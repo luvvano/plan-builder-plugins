@@ -39,9 +39,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Templates and References
 
-- [ ] **TMPL-01**: All GSD planning templates (PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md, etc.) are bundled in `templates/`
-- [ ] **TMPL-02**: All GSD reference docs (questioning.md, ui-brand.md, etc.) are bundled in `references/`
-- [ ] **TMPL-03**: Workflow SKILL.md files reference bundled templates by plugin-relative path
+- [x] **TMPL-01**: All GSD planning templates (PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md, etc.) are bundled in `templates/`
+- [x] **TMPL-02**: All GSD reference docs (questioning.md, ui-brand.md, etc.) are bundled in `references/`
+- [x] **TMPL-03**: Workflow SKILL.md files reference bundled templates by plugin-relative path
 
 ### Lifecycle Services
 
@@ -103,9 +103,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | CMD-01 | Phase 3 | Pending |
 | CMD-02 | Phase 3 | Pending |
 | CMD-05 | Phase 3 | Pending |
-| TMPL-01 | Phase 3 | Pending |
-| TMPL-02 | Phase 3 | Pending |
-| TMPL-03 | Phase 3 | Pending |
+| TMPL-01 | Phase 3 | Complete |
+| TMPL-02 | Phase 3 | Complete |
+| TMPL-03 | Phase 3 | Complete |
 | LIFE-01 | Phase 4 | Pending |
 | LIFE-02 | Phase 4 | Pending |
 | LIFE-03 | Phase 4 | Pending |
