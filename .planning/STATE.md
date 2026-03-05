@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-05T05:49:41.112Z"
+last_updated: "2026-03-05T05:52:18.833Z"
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 7
 ---
 
 # Project State
@@ -24,8 +24,8 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 
 Phase: 2 of 4 (Core Workflows) — IN PROGRESS
 Plan: 5 of 5 in current phase
-Status: Plan 02-05 complete, continuing Phase 2
-Last activity: 2026-03-05 — Plan 02-05: /gsd:verify-work orchestrator + gsd-verifier gap analysis stage
+Status: All Phase 2 plans complete
+Last activity: 2026-03-05 — Plan 02-02: /gsd:new-project orchestrator + stage-setup + stage-roadmap with 3 embedded agent roles
 
 Progress: [███████░░░] 71% (5/7 plans)
 
@@ -52,6 +52,8 @@ Progress: [███████░░░] 71% (5/7 plans)
 |-------|-------|-------|----------|
 | 1 | 2/2 | ~8 min | ~4 min |
 | 2 | 3/5 | ~7 min | ~2 min |
+| Phase 02 P03 | 5min | 3 tasks | 4 files |
+| Phase 02 P02 | 6min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -72,6 +74,9 @@ Recent decisions affecting current work:
 - [Phase 02]: Orchestrator + stage pattern for execute-phase: SKILL.md delegates to stage-executor.md via @-reference
 - [Phase 02]: wave-state.json updated per-plan (not batch) for safe resume-from-interruption
 - [Phase 02]: Embedded gsd-verifier agent role verbatim in stage-verify.md for self-contained gap analysis
+- [Phase 02]: Embed full agent roles verbatim in stage SKILL.md files for plugin portability
+- [Phase 02]: Orchestrator + stage SKILL.md pattern: user-invocable orchestrator @-references non-invocable stages
+- [Phase 02]: Agent roles embedded verbatim in stage files for self-containment; orchestrator uses relative @./stage-*.md at point of use
 
 ### Pending Todos
 
@@ -86,5 +91,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-05
-Stopped at: Completed 02-05-PLAN.md
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

@@ -28,11 +28,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **AGNT-01**: All 10+ GSD agent roles are implemented as SKILL.md files in `skills/agents/`
 - [x] **AGNT-02**: Agent SKILL.md files contain the full role system prompt from the original GSD agent definitions
-- [ ] **AGNT-03**: Workflow SKILL.md files can inline-inject agent SKILL.md content for orchestration
+- [x] **AGNT-03**: Workflow SKILL.md files can inline-inject agent SKILL.md content for orchestration
 
 ### Orchestration
 
-- [ ] **ORCH-01**: Workflow orchestration works via inline agent context injection (replacing Claude Code's Task() primitive)
+- [x] **ORCH-01**: Workflow orchestration works via inline agent context injection (replacing Claude Code's Task() primitive)
 - [x] **ORCH-02**: Execute-phase uses sequential wave execution with wave-state.json tracking
 - [x] **ORCH-03**: Interrupted workflows are resumable by reading wave-state.json
 - [x] **ORCH-04**: State queries (phase status, config reads) are registered as `registerTool()` entries returning structured JSON
@@ -95,8 +95,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | CMD-04 | Phase 2 | Complete |
 | AGNT-01 | Phase 2 | Complete |
 | AGNT-02 | Phase 2 | Complete |
-| AGNT-03 | Phase 2 | Pending |
-| ORCH-01 | Phase 2 | Pending |
+| AGNT-03 | Phase 2 | Complete |
+| ORCH-01 | Phase 2 | Complete |
 | ORCH-02 | Phase 2 | Complete |
 | ORCH-03 | Phase 2 | Complete |
 | ORCH-04 | Phase 2 | Complete |
