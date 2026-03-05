@@ -643,6 +643,61 @@ export default function gsdPlugin(api: PluginContext): void {
   });
 
   // ── Telegram bot command menu ──────────────────────────────────────────────
+  // ── /gsd_trace ────────────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_trace",
+    description: "Show recent OpenClaw traces (tool calls, LLM calls, commands)",
+    acceptsArgs: false,
+    requireAuth: false,
+    handler() {
+      try {
+        const { DatabaseSync } = require("node:sqlite") as typeof import("node:sqlite");
+        const { join } = require("node:path") as typeof import("node:path");
+        const { homedir } = require("node:os") as typeof import("node:os");
+        const dbPath = join(homedir(), ".openclaw", "tracer.db");
+        const db = new DatabaseSync(dbPath);
+        const events = db.prepare(
+          "SELECT type, name, duration_ms, status, metadata, started_at FROM events ORDER BY started_at DESC LIMIT 25"
+        ).all() as Array<{ type: string; name: string; duration_ms: number | null; status: string; metadata: string | null; started_at: number }>;
+        const sessions = db.prepare(
+          "SELECT session_key, channel, sender_id, model, trigger, started_at, ended_at FROM sessions ORDER BY started_at DESC LIMIT 3"
+        ).all() as Array<{ session_key: string | null; channel: string | null; sender_id: string | null; model: string | null; trigger: string | null; started_at: number; ended_at: number | null }>;
+
+        const lines: string[] = ["**OpenClaw Tracer**", ""];
+
+        if (sessions.length) {
+          lines.push("**Recent Sessions:**");
+          for (const s of sessions) {
+            const dur = s.ended_at ? Math.round((s.ended_at - s.started_at) / 1000) + "s" : "active";
+            lines.push("  " + (s.session_key || "?") + " | " + (s.channel || "?") + " | " + (s.model || "?") + " | " + dur);
+          }
+          lines.push("");
+        }
+
+        if (!events.length) {
+          lines.push("No events yet.");
+        } else {
+          lines.push("**Last " + events.length + " Events:**");
+          for (const e of events) {
+            const ms = e.duration_ms != null ? e.duration_ms + "ms" : "?";
+            let extra = "";
+            if (e.metadata) {
+              const m = JSON.parse(e.metadata) as Record<string, unknown>;
+              if (m.total_tokens) extra = " [" + m.total_tokens + " tok]";
+              else if (m.error) extra = " ⚠️";
+            }
+            const icon = e.type === "llm_call" ? "🤖" : e.type === "tool_call" ? "🔧" : e.type === "command" ? "💬" : "📌";
+            lines.push(icon + " `" + e.name.slice(0, 28) + "` " + ms + extra);
+          }
+        }
+
+        return { text: fmt(lines.join("\n")) };
+      } catch (e) {
+        return { text: "Tracer DB not available: " + String(e).slice(0, 100) };
+      }
+    },
+  });
+
   const GSD_COMMANDS = [
     // Utility (Phase 4)
     { command: "gsd_status",              description: "Show GSD project status" },
@@ -654,6 +709,7 @@ export default function gsdPlugin(api: PluginContext): void {
     { command: "gsd_update",              description: "Update plugin from GitHub" },
     { command: "gsd_project_list",        description: "List or manage tracked projects" },
     { command: "gsd_set_project",         description: "Set the active GSD project" },
+    { command: "gsd_trace",               description: "Show recent OpenClaw traces" },
     // Workflow (Phase 5)
     { command: "gsd_quick",               description: "Run an ad-hoc GSD task" },
     { command: "gsd_new_project",         description: "Initialize a new GSD project" },
