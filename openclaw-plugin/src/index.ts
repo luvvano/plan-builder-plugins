@@ -10,7 +10,8 @@
 
 import { join } from "node:path";
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, cpSync } from "node:fs";
+import { homedir } from "node:os";
 import { Type } from "@sinclair/typebox";
 import type { PluginContext } from "openclaw/plugin-sdk/core";
 
@@ -198,6 +199,7 @@ export default function gsdPlugin(api: PluginContext): void {
           "  /gsd:health                    — Project health check",
           "",
           "**Utility:**",
+          "  /gsd:update                    — Pull latest plugin version from GitHub + restart",
           "  /gsd:project-list              — List/add/remove tracked GSD projects",
           "  /gsd:cleanup                   — Clean up GSD artifacts",
           "  /gsd:help                      — This help listing",
@@ -205,6 +207,105 @@ export default function gsdPlugin(api: PluginContext): void {
           "",
           `Planning directory: ${planningDir}`,
           `GSD_TOOLS_PATH: ${process.env.GSD_TOOLS_PATH ?? "(not set)"}`,
+        ].join("\n"),
+      };
+    },
+  });
+
+  // ── /gsd:update — pull latest plugin from GitHub + reinstall ────────────
+  api.registerCommand({
+    name: "gsd:update",
+    description: "Pull latest GSD plugin from GitHub and reinstall (~/.openclaw/extensions/gsd-for-openclaw)",
+    acceptsArgs: false,
+    requireAuth: false,
+    handler() {
+      const home = homedir();
+      const repoDir = join(home, "projects", "plan-builder-plugins");
+      const pluginSrc = join(repoDir, "openclaw-plugin");
+      const installDir = join(home, ".openclaw", "extensions", "gsd-for-openclaw");
+
+      const lines: string[] = [];
+
+      // Read current version
+      let oldVersion = "unknown";
+      try {
+        const cur = JSON.parse(readFileSync(join(installDir, "openclaw.plugin.json"), "utf8")) as { version?: string };
+        oldVersion = cur.version ?? "unknown";
+      } catch { /* first install */ }
+
+      // Clone or pull
+      try {
+        if (existsSync(join(repoDir, ".git"))) {
+          lines.push("📡 Pulling latest from origin...");
+          const pullOut = execSync(`git -C "${repoDir}" pull --ff-only`, { encoding: "utf8", timeout: 30000 });
+          lines.push(pullOut.trim() || "Already up to date.");
+        } else {
+          lines.push("📡 Cloning https://github.com/luvvano/plan-builder-plugins ...");
+          execSync(`git clone https://github.com/luvvano/plan-builder-plugins "${repoDir}"`, {
+            encoding: "utf8", timeout: 60000,
+          });
+          lines.push("Cloned successfully.");
+        }
+      } catch (e) {
+        return { text: `❌ Git error: ${String(e)}` };
+      }
+
+      // Get commit hash
+      let commitHash = "";
+      try {
+        commitHash = execSync(`git -C "${repoDir}" rev-parse --short HEAD`, { encoding: "utf8" }).trim();
+      } catch { /* ignore */ }
+
+      // Read new version
+      let newVersion = "unknown";
+      try {
+        const nxt = JSON.parse(readFileSync(join(pluginSrc, "openclaw.plugin.json"), "utf8")) as { version?: string };
+        newVersion = nxt.version ?? "unknown";
+      } catch { /* ignore */ }
+
+      // Copy files (exclude node_modules)
+      lines.push("\n📦 Installing files...");
+      try {
+        // Try rsync first (faster, excludes node_modules cleanly)
+        execSync(`rsync -a --exclude=node_modules "${pluginSrc}/" "${installDir}/"`, {
+          encoding: "utf8", timeout: 30000,
+        });
+        lines.push("Files copied via rsync.");
+      } catch {
+        // Fallback: cpSync (Node 16.7+), skip node_modules
+        try {
+          cpSync(pluginSrc, installDir, {
+            recursive: true,
+            filter: (src) => !src.includes("node_modules"),
+          });
+          lines.push("Files copied via cpSync.");
+        } catch (e2) {
+          return { text: `❌ Copy error: ${String(e2)}\n\n${lines.join("\n")}` };
+        }
+      }
+
+      // Restart gateway
+      lines.push("\n🔄 Restarting OpenClaw gateway...");
+      try {
+        execSync("openclaw gateway restart", { encoding: "utf8", timeout: 15000 });
+        lines.push("Gateway restarted.");
+      } catch (e) {
+        lines.push(`⚠️  Gateway restart failed (restart manually): ${String(e)}`);
+      }
+
+      const versionLine = oldVersion === newVersion
+        ? `Version: **${newVersion}**${commitHash ? ` @ \`${commitHash}\`` : ""}`
+        : `Version: **${oldVersion}** → **${newVersion}**${commitHash ? ` @ \`${commitHash}\`` : ""}`;
+
+      return {
+        text: [
+          "✅ **GSD plugin updated**",
+          "",
+          versionLine,
+          "",
+          ...lines,
+          "",
+          "Changes take effect on next command.",
         ].join("\n"),
       };
     },
