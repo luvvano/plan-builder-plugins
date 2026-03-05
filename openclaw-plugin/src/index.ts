@@ -140,4 +140,229 @@ export default function gsdPlugin(api: PluginContext): void {
   // skills/workflows/*/SKILL.md — OpenClaw's registerCommand API does not allow
   // colons in command names, so SKILL.md is the correct mechanism for gsd:* commands.
   // The registerTool calls above use underscores and work correctly.
+
+  // ── Telegram HTML utility helpers ─────────────────────────────────────────
+  function fmtHtml(text: string): string {
+    return text.length > 4000 ? text.slice(0, 4000) + "\n\n<i>…truncated</i>" : text;
+  }
+
+  function tp(): string {
+    return process.env.GSD_TOOLS_PATH
+      ?? join(import.meta.dirname, "..", "bin", "gsd-tools.cjs");
+  }
+
+  function noProject(): string {
+    return fmtHtml(
+      `⚠️ <b>No GSD project found.</b>\n\nCurrent directory: <code>${process.cwd()}</code>\n\nRun <b>/gsd_new_project</b> to initialize a project here, or navigate to an existing GSD project directory first.`
+    );
+  }
+
+  // ── /gsd_status ───────────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_status",
+    description: "Show GSD project status — milestone, phase, progress",
+    acceptsArgs: false,
+    requireAuth: false,
+    handler() {
+      try {
+        const snap = execGsdTools("state-snapshot") as Record<string, unknown>;
+        if ((snap as Record<string, unknown>).error) return { text: noProject() };
+        const cfg = ((snap as Record<string, unknown>).config ?? {}) as Record<string, unknown>;
+        const progress = ((snap as Record<string, unknown>).progress ?? {}) as Record<string, unknown>;
+        const milestone = (cfg.milestone ?? "v?") as string;
+        const milestoneName = (cfg.milestone_name ?? "") as string;
+        const total = (progress.total_plans ?? 0) as number;
+        const done = (progress.completed_plans ?? 0) as number;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        const filled = Math.round((pct / 100) * 10);
+        const bar = "█".repeat(filled) + "░".repeat(10 - filled);
+        const phase = (cfg.current_phase ?? (progress as Record<string, unknown>).current_phase ?? "—") as string;
+        const status = (cfg.status ?? "active") as string;
+        return { text: fmtHtml([
+          `<b>GSD Project Status</b>`,
+          ``,
+          `Milestone: <b>${milestone}${milestoneName ? " · " + milestoneName : ""}</b>`,
+          `Phase: <code>${phase}</code>`,
+          `Status: <code>${status}</code>`,
+          `Progress: <code>[${bar}] ${done}/${total} plans (${pct}%)</code>`,
+        ].join("\n")) };
+      } catch {
+        return { text: noProject() };
+      }
+    },
+  });
+
+  // ── /gsd_progress ─────────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_progress",
+    description: "Show GSD phase progress breakdown",
+    acceptsArgs: false,
+    requireAuth: false,
+    handler() {
+      try {
+        const result = execGsdTools("progress json") as Record<string, unknown>;
+        if ((result as Record<string, unknown>).error) return { text: noProject() };
+        const phases = (result.phases ?? []) as Array<Record<string, unknown>>;
+        const total = (result.total_plans ?? 0) as number;
+        const done = (result.total_summaries ?? 0) as number;
+        const pct = (result.percent ?? 0) as number;
+        const filled = Math.round((pct / 100) * 10);
+        const bar = "█".repeat(filled) + "░".repeat(10 - filled);
+        const rows = phases.map(p => {
+          const st = p.status as string;
+          const icon = st === "Complete" ? "✅" : st === "In Progress" ? "🔄" : "⏳";
+          return `${icon} <b>Phase ${p.number}</b> ${p.name} — <code>${p.summaries}/${p.plans}</code>`;
+        });
+        return { text: fmtHtml([
+          `<b>GSD Progress</b>`,
+          `<code>[${bar}] ${done}/${total} plans (${pct}%)</code>`,
+          ``,
+          ...rows,
+        ].join("\n")) };
+      } catch {
+        return { text: noProject() };
+      }
+    },
+  });
+
+  // ── /gsd_help ─────────────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_help",
+    description: "List all GSD commands available in Telegram",
+    acceptsArgs: false,
+    requireAuth: false,
+    handler() {
+      return { text: fmtHtml([
+        `<b>GSD Commands for Telegram</b>`,
+        ``,
+        `<b>Project:</b>`,
+        `/gsd_new_project — Initialize new GSD project`,
+        `/gsd_map_codebase — Generate codebase map`,
+        ``,
+        `<b>Phase Planning:</b>`,
+        `/gsd_discuss_phase &lt;N&gt; — Capture design decisions`,
+        `/gsd_research_phase &lt;N&gt; — Research phase domain`,
+        `/gsd_list_phase_assumptions &lt;N&gt; — Preview approach`,
+        `/gsd_plan_phase &lt;N&gt; — Plan a phase`,
+        ``,
+        `<b>Execution:</b>`,
+        `/gsd_execute_phase &lt;N&gt; — Execute plans in phase`,
+        `/gsd_quick &lt;description&gt; — Ad-hoc task`,
+        ``,
+        `<b>Roadmap:</b>`,
+        `/gsd_add_phase &lt;desc&gt; — Add phase`,
+        `/gsd_insert_phase &lt;N&gt; &lt;desc&gt; — Insert phase`,
+        `/gsd_remove_phase &lt;N&gt; — Remove phase`,
+        ``,
+        `<b>Milestones:</b>`,
+        `/gsd_new_milestone &lt;version&gt; — Start milestone`,
+        `/gsd_complete_milestone &lt;ver&gt; — Archive milestone`,
+        `/gsd_progress — Show progress`,
+        ``,
+        `<b>Session:</b>`,
+        `/gsd_resume_work — Resume from saved state`,
+        `/gsd_pause_work — Save state`,
+        ``,
+        `<b>Verification:</b>`,
+        `/gsd_verify_work &lt;N&gt; — Verify phase`,
+        `/gsd_audit_milestone &lt;ver&gt; — Full audit`,
+        `/gsd_add_tests — Add test coverage`,
+        ``,
+        `<b>Todos &amp; Debug:</b>`,
+        `/gsd_add_todo &lt;desc&gt; — Add TODO`,
+        `/gsd_check_todos — Review TODOs`,
+        `/gsd_debug &lt;issue&gt; — Debug workflow`,
+        ``,
+        `<b>Config:</b>`,
+        `/gsd_set_profile &lt;profile&gt; — Set model profile`,
+        `/gsd_settings — Show config`,
+        `/gsd_health — Health check`,
+        ``,
+        `<b>Utility:</b>`,
+        `/gsd_status — Project status`,
+        `/gsd_update — Update plugin from GitHub`,
+        `/gsd_project_list — Tracked projects`,
+        `/gsd_cleanup — Clean up artifacts`,
+        `/gsd_help — This listing`,
+      ].join("\n")) };
+    },
+  });
+
+  // ── /gsd_health ───────────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_health",
+    description: "Run GSD project health check",
+    acceptsArgs: false,
+    requireAuth: false,
+    handler() {
+      try {
+        const result = execGsdTools("validate health") as Record<string, unknown>;
+        if ((result as Record<string, unknown>).error) return { text: noProject() };
+        const healthy = (result.healthy ?? result.valid ?? false) as boolean;
+        const issues = (result.issues ?? []) as string[];
+        const warnings = (result.warnings ?? []) as string[];
+        const lines = [
+          `<b>GSD Health Check</b>`,
+          ``,
+          healthy ? `✅ Project is healthy` : `❌ Issues found`,
+          ...issues.map((i: string) => `• <code>${i}</code>`),
+          ...(warnings.length > 0 ? [``, `⚠️ Warnings:`] : []),
+          ...warnings.map((w: string) => `• ${w}`),
+        ];
+        return { text: fmtHtml(lines.join("\n")) };
+      } catch {
+        return { text: noProject() };
+      }
+    },
+  });
+
+  // ── /gsd_cleanup ──────────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_cleanup",
+    description: "Clean up GSD temp artifacts (research files)",
+    acceptsArgs: false,
+    requireAuth: false,
+    handler() {
+      try {
+        const { readdirSync, unlinkSync, statSync, existsSync: fsExists } = require("fs") as typeof import("fs");
+        const researchDir = join(process.cwd(), ".planning", "research");
+        const cleaned: string[] = [];
+        if (fsExists(researchDir)) {
+          for (const f of readdirSync(researchDir)) {
+            if (f.endsWith(".md")) {
+              const fp = join(researchDir, f);
+              if (statSync(fp).isFile()) { unlinkSync(fp); cleaned.push(f); }
+            }
+          }
+        }
+        return { text: fmtHtml([
+          `<b>GSD Cleanup</b>`,
+          ``,
+          cleaned.length > 0
+            ? `✅ Removed ${cleaned.length} temp file(s):\n${cleaned.map((f: string) => `• <code>${f}</code>`).join("\n")}`
+            : `✅ Nothing to clean up — project is tidy`,
+        ].join("\n")) };
+      } catch (e) {
+        return { text: `<b>Error:</b> <code>${String(e).slice(0, 200)}</code>` };
+      }
+    },
+  });
+
+  // ── /gsd_settings ─────────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_settings",
+    description: "Show current GSD project configuration",
+    acceptsArgs: false,
+    requireAuth: false,
+    handler() {
+      try {
+        const configPath = join(process.cwd(), ".planning", "config.json");
+        const raw = readFileSync(configPath, "utf8");
+        const cfg = JSON.parse(raw) as Record<string, unknown>;
+        return { text: fmtHtml(`<b>GSD Settings</b>\n\n<pre>${JSON.stringify(cfg, null, 2)}</pre>`) };
+      } catch {
+        return { text: noProject() };
+      }
+    },
+  });
 }
