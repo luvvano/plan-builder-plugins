@@ -393,7 +393,7 @@ export default function gsdPlugin(api: PluginContext): void {
             return { text: fmt(`**GSD Projects**\n\nNo projects tracked yet.\n\nAdd current project: **/gsd_project_list add**`) };
           }
           const rows = projects.map((p, i) =>
-            `${i + 1}. **${p.name}**\n   `${p.path}`\n   Added: ${p.added} · Active: ${p.last_active}`
+            `${i + 1}. **${p.name}**\n   ${p.path}\n   Added: ${p.added} · Active: ${p.last_active}`
           ).join("\n\n");
           return { text: fmt(`**GSD Projects** (${projects.length})\n\n${rows}\n\n/gsd_project_list add — register\n/gsd_project_list remove <name> — unregister`) };
         }
@@ -526,9 +526,7 @@ export default function gsdPlugin(api: PluginContext): void {
         const configPath = join(resolveActiveProjectDir(), ".planning", "config.json");
         const raw = readFileSync(configPath, "utf8");
         const cfg = JSON.parse(raw) as Record<string, unknown>;
-        return { text: fmt(`**GSD Settings**\n\n```
-${JSON.stringify(cfg, null, 2)}
-````) };
+        return { text: "**GSD Settings**\n\n" + JSON.stringify(cfg, null, 2) };
       } catch {
         return { text: noProject() };
       }
