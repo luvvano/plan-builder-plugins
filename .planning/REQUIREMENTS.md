@@ -22,7 +22,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CMD-02**: Each SKILL.md has correct YAML frontmatter (name, description, user-invocable, os gating)
 - [x] **CMD-03**: Core 4 commands work end-to-end: new-project, plan-phase, execute-phase, verify-work
 - [x] **CMD-04**: All commands default to `--auto` mode (no AskUserQuestion dependency)
-- [ ] **CMD-05**: `/gsd:help` command lists all registered commands organized by workflow stage
+- [x] **CMD-05**: `/gsd:help` command lists all registered commands organized by workflow stage
 
 ### Agents
 
@@ -102,7 +102,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | ORCH-04 | Phase 2 | Complete |
 | CMD-01 | Phase 3 | Complete |
 | CMD-02 | Phase 3 | Complete |
-| CMD-05 | Phase 3 | Pending |
+| CMD-05 | Phase 3 | Complete |
 | TMPL-01 | Phase 3 | Complete |
 | TMPL-02 | Phase 3 | Complete |
 | TMPL-03 | Phase 3 | Complete |
