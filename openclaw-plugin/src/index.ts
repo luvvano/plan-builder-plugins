@@ -502,7 +502,7 @@ export default function gsdPlugin(api: PluginContext): void {
         execSync("openclaw gateway restart", { encoding: "utf8", timeout: 15000 });
         log.push(`🔄 Gateway restarted`);
       } catch {
-        log.push(`⚠️ Gateway restart failed — run: `openclaw gateway restart``);
+        log.push("⚠️ Gateway restart failed — run: openclaw gateway restart");
       }
 
       const versionLine = oldVersion === newVersion
@@ -523,7 +523,7 @@ export default function gsdPlugin(api: PluginContext): void {
     requireAuth: false,
     handler() {
       try {
-        const configPath = join(process.cwd(), ".planning", "config.json");
+        const configPath = join(resolveActiveProjectDir(), ".planning", "config.json");
         const raw = readFileSync(configPath, "utf8");
         const cfg = JSON.parse(raw) as Record<string, unknown>;
         return { text: fmt(`**GSD Settings**\n\n```
