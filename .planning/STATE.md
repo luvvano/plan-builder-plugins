@@ -101,7 +101,7 @@ None.
 |---|-------------|------|--------|-----------|
 | 1 | Update README.md with installation guide for OpenClaw environment | 2026-03-05 | c54279f | [1-update-readme-md-so-it-will-contain-inst](./quick/1-update-readme-md-so-it-will-contain-inst/) |
 | 2 | Add gsd:project-list command — persistent project tracking | 2026-03-05 | 6d9295d | [2-add-gsd-project-list-command](./quick/2-add-gsd-project-list-command/) |
-| 3 | Add gsd:update command — pull latest plugin from git and reinstall | 2026-03-05 | — | [3-add-gsd-update-command-to-pull-latest-pl](./quick/3-add-gsd-update-command-to-pull-latest-pl/) |
+| 3 | Add gsd:update command — pull latest plugin from git and reinstall | 2026-03-05 | de0fffa | [3-add-gsd-update-command-to-pull-latest-pl](./quick/3-add-gsd-update-command-to-pull-latest-pl/) |
 
 ### Blockers/Concerns
 
