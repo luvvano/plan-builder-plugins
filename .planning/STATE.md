@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 Phase: 3 of 4 (Full Command Set) — COMPLETE
 Plan: 5 of 5 in current phase
 Status: Phase 3 complete — All 5 plans (03-01 through 03-05) complete
-Last activity: 2026-03-05 — Plan 03-05: gsd:help expanded to 26 commands by 14 stages, frontmatter audit passed for all 37 files
+Last activity: 2026-03-05 - Completed quick task 1: Update README.md with installation guide for OpenClaw environment
 
 Progress: [██████████] 100% (12/12 plans)
 
@@ -94,6 +94,12 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 None.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | Update README.md with installation guide for OpenClaw environment | 2026-03-05 | c54279f | [1-update-readme-md-so-it-will-contain-inst](./quick/1-update-readme-md-so-it-will-contain-inst/) |
 
 ### Blockers/Concerns
 
