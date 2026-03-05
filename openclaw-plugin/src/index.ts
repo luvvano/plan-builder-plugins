@@ -243,26 +243,50 @@ export default function gsdPlugin(api: PluginContext): void {
     handler() {
       try {
         const err = noProject(); if (err) return { text: err };
-        const result = runTools("progress json") as Record<string, unknown>;
-        if ((result as Record<string, unknown>).error) return { text: "No GSD project." };
-        const phases = (result.phases ?? []) as Array<Record<string, unknown>>;
-        const total = (result.total_plans ?? 0) as number;
-        const done = (result.total_summaries ?? 0) as number;
-        const pct = (result.percent ?? 0) as number;
+        const roadmap = runTools("roadmap analyze") as Record<string, unknown>;
+        if ((roadmap as Record<string, unknown>).error) return { text: "No GSD project or ROADMAP.md missing." };
+
+        const allPhases = (roadmap.phases ?? []) as Array<Record<string, unknown>>;
+        const total = (roadmap.total_plans ?? 0) as number;
+        const done = (roadmap.total_summaries ?? 0) as number;
+        const completedCount = (roadmap.completed_phases ?? 0) as number;
+        const nextPhase = roadmap.next_phase as string | null;
+        const pct = allPhases.length > 0 ? Math.round((completedCount / allPhases.length) * 100) : 0;
         const filled = Math.round((pct / 100) * 10);
         const bar = "█".repeat(filled) + "░".repeat(10 - filled);
-        const rows = phases.map(p => {
-          const st = p.status as string;
-          const icon = st === "Complete" ? "✅" : st === "In Progress" ? "🔄" : "⏳";
-          return `${icon} **Phase ${p.number}** ${p.name} — ${p.summaries}/${p.plans}`;
+
+        const rows = allPhases.map(p => {
+          const disk = p.disk_status as string;
+          const plans = (p.plan_count ?? 0) as number;
+          const summaries = (p.summary_count ?? 0) as number;
+          const isComplete = disk === "complete" && summaries === plans && plans > 0;
+          const isNext = String(p.number) === String(nextPhase);
+          const icon = isComplete ? "✅" : isNext ? "▶️" : "⏳";
+          const detail = plans > 0 ? ` — ${summaries}/${plans} plans` : " — not started";
+          return `${icon} Phase ${p.number}: ${p.name}${detail}`;
         });
-        return { text: fmt([
-          `**GSD Progress**`,
-          `[${bar}] ${done}/${total} plans (${pct}%)`, ``,
+
+        const lines: string[] = [
+          `**GSD Progress — ${roadmap.completed_phases ?? 0}/${allPhases.length} phases done**`,
+          `[${bar}] ${pct}% (${done}/${total} plans)`,
+          ``,
           ...rows,
-        ].join("\n")) };
+        ];
+
+        if (nextPhase) {
+          const np = allPhases.find(p => String(p.number) === String(nextPhase));
+          if (np) {
+            lines.push(``, `**Next up: Phase ${np.number} — ${np.name}**`);
+            lines.push(`Run /gsd_discuss_phase ${np.number} to start`);
+          }
+        } else if (completedCount === allPhases.length && allPhases.length > 0) {
+          lines.push(``, `🎉 **All phases complete!**`);
+          lines.push(`Run /gsd_new_milestone to start the next milestone`);
+        }
+
+        return { text: fmt(lines.join("\n")) };
       } catch {
-        return { text: noProject() || "Error reading project." };
+        return { text: "Error reading project progress." };
       }
     },
   });
