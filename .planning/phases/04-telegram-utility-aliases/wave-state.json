@@ -1,0 +1,14 @@
+{
+  "phase": "04",
+  "phase_dir": ".planning/phases/04-telegram-utility-aliases",
+  "created": "2026-03-05T13:14:00.000Z",
+  "updated": "2026-03-05T13:25:00.000Z",
+  "waves": { "1": ["04-01"], "2": ["04-02"] },
+  "plans": {
+    "04-01": { "status": "complete", "completed_at": "2026-03-05T13:20:00.000Z" },
+    "04-02": { "status": "complete", "completed_at": "2026-03-05T13:25:00.000Z" }
+  },
+  "current_wave": 2,
+  "total_plans": 2,
+  "completed_plans": 2
+}
