@@ -20,11 +20,12 @@ OpenClaw users can run `/gsd:new-project`, `/gsd:plan-phase`, `/gsd:execute-phas
 - ✓ Create OpenClaw plugin manifest (openclaw.plugin.json) — v1.0
 - ✓ Ensure multi-agent orchestration works via inline agent context injection — v1.0
 
-### Active
+### Active (v1.1)
 
-- [ ] Port GSD hooks (context-monitor, check-update) to OpenClaw service/event system
-- [ ] Provide install/uninstall scripts for OpenClaw users
-- [ ] ClawHub distribution packaging
+- [ ] All 26+ GSD commands registered as `gsd_*` underscore aliases in `src/index.ts` (Telegram-compatible)
+- [ ] Utility command aliases run without AI — direct gsd-tools execution
+- [ ] Workflow command aliases dispatch to corresponding SKILL.md execution
+- [ ] Telegram bot command menu populated (autocomplete for all gsd_* commands)
 
 ### Out of Scope
 
@@ -63,5 +64,15 @@ OpenClaw users can run `/gsd:new-project`, `/gsd:plan-phase`, `/gsd:execute-phas
 | Auto-mode defaults replace AskUserQuestion | OpenClaw plugins cannot use AskUserQuestion reliably | ✓ Good |
 | Sequential wave execution in v1 | OpenClaw has no synchronization primitive for parallel | ✓ Good |
 
+## Current Milestone: v1.1 Telegram Support
+
+**Goal:** All GSD commands accessible natively in Telegram via `gsd_*` underscore aliases registered through `api.registerCommand`.
+
+**Target features:**
+- 26+ `gsd_*` Telegram-compatible command aliases
+- Utility commands (status, progress, update, project-list, help, health, settings, cleanup) as direct handlers — no AI, instant response
+- Workflow commands (quick, new-project, plan-phase, execute-phase, discuss-phase, etc.) dispatch to corresponding SKILL.md
+- Telegram bot command menu autocomplete for all aliases
+
 ---
-*Last updated: 2026-03-05 after v1.0 milestone*
+*Last updated: 2026-03-05 after v1.1 milestone start*

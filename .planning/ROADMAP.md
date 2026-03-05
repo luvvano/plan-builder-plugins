@@ -15,7 +15,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Scaffold the plugin, bundle gsd-tools.cjs, validate command naming and orchestration pattern end-to-end
 - [ ] **Phase 2: Core Workflows** - Port the 4 primary GSD commands, all agent roles, and the full orchestration model
 - [x] **Phase 3: Full Command Set** - Scale out to all 24 commands, bundle all templates and references, add state query tools (completed 2026-03-05)
-- [ ] **Phase 4: Lifecycle and Distribution** - Add hooks, lifecycle services, install scripts, and ClawHub packaging
+- [ ] **Phase 4: Telegram Utility Aliases** — Register 8 direct-handler commands (gsd_status, gsd_progress, gsd_help, gsd_health, gsd_settings, gsd_update, gsd_project_list, gsd_cleanup) in src/index.ts
+- [ ] **Phase 5: Telegram Workflow Aliases** — Register 17 workflow dispatch commands (gsd_quick, gsd_new_project, gsd_plan_phase, gsd_execute_phase, and 13 more) in src/index.ts
 
 ## Phase Details
 
@@ -52,25 +53,41 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Every SKILL.md has correct YAML frontmatter (name, description, user-invocable, os gating) — no skill silently fails to load on darwin/linux
 **Plans**: TBD
 
-### Phase 4: Lifecycle and Distribution
-**Goal**: Plugin is production-grade — lifecycle services run automatically, and users can install via ClawHub or manual copy with documentation
-**Depends on**: Phase 3
-**Requirements**: LIFE-01, LIFE-02, LIFE-03, DIST-01, DIST-02, DIST-03, DIST-04
+### Phase 4: Telegram Utility Aliases
+**Goal**: 8 most-used GSD commands available as instant Telegram bot commands — no AI required, direct execution via gsd-tools
+**Milestone**: v1.1 — Telegram Support
+**Depends on**: v1.0 complete
+**Requirements**: TEL-01, TEL-02, TEL-03, TEL-04, TEL-05, TEL-06, TEL-07, TEL-08, TEL-09, TEL-10
 **Success Criteria** (what must be TRUE):
-  1. On OpenClaw startup, the update check fires via `gateway:startup` and reports whether a newer GSD plugin version is available
-  2. On agent bootstrap, the context monitor fires via `agent:bootstrap` and injects GSD state context into the session
-  3. Plugin installs successfully via `clawhub install luvvano/plan-builder-plugins` and uninstalls cleanly via the provided shell script
-  4. README documents OpenClaw-specific setup, command reference, and manual install path clearly enough that a new user can get started without external help
-**Plans**: TBD
+  1. `/gsd_status` in Telegram returns project name, phase, and progress bar without AI involvement
+  2. `/gsd_update` pulls latest from GitHub, rsyncs to extension dir, and restarts gateway — all from Telegram
+  3. `/gsd_project_list`, `/gsd_progress`, `/gsd_help`, `/gsd_health`, `/gsd_settings`, `/gsd_cleanup` all return formatted text directly
+  4. All 8 commands show up in Telegram's bot command autocomplete menu
+  5. Passing no args to a command that requires them returns a usage hint, not an error
+**Plans**: 04-01 (status, progress, help, health, settings, cleanup), 04-02 (update, project-list)
+
+### Phase 5: Telegram Workflow Aliases
+**Goal**: All remaining 17 GSD workflow commands accessible in Telegram as `gsd_*` aliases that dispatch to the corresponding SKILL.md
+**Milestone**: v1.1 — Telegram Support
+**Depends on**: Phase 4
+**Requirements**: TEL-11 through TEL-27
+**Success Criteria** (what must be TRUE):
+  1. `/gsd_quick Fix login bug` in Telegram triggers the gsd:quick workflow with "Fix login bug" as the task description
+  2. `/gsd_plan_phase 1` and `/gsd_execute_phase 1` correctly pass phase number to the corresponding SKILL.md
+  3. `/gsd_new_project` starts the new-project workflow with no args required upfront
+  4. All 17 workflow aliases pass their `$ARGUMENTS` to the underlying skill correctly
+  5. Unrecognized or malformed args return a one-line usage hint
+**Plans**: 05-01 (quick, new_project, plan_phase, execute_phase, discuss_phase, verify_work), 05-02 (add_phase, new_milestone, complete_milestone, resume_work, pause_work, debug), 05-03 (add_todo, check_todos, audit_milestone, add_tests, map_codebase, research_phase, list_phase_assumptions, set_profile, insert_phase, remove_phase, plan_milestone_gaps)
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-03-04 |
-| 2. Core Workflows | 0/TBD | Not started | - |
-| 3. Full Command Set | 5/5 | Complete   | 2026-03-05 |
-| 4. Lifecycle and Distribution | 0/TBD | Not started | - |
+| 2. Core Workflows | 5/5 | Complete | 2026-03-05 |
+| 3. Full Command Set | 5/5 | Complete | 2026-03-05 |
+| 4. Telegram Utility Aliases | 0/2 | Not started | - |
+| 5. Telegram Workflow Aliases | 0/3 | Not started | - |

@@ -56,6 +56,43 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **DIST-03**: Install/uninstall shell scripts are provided
 - [ ] **DIST-04**: README documents OpenClaw-specific setup and usage
 
+## v1.1 Requirements — Telegram Support
+
+Requirements for milestone v1.1. Phases 4–5.
+
+### Telegram Utility Aliases
+
+- [ ] **TEL-01**: `gsd_status` — shows project name, current phase, progress bar. Direct handler, no AI.
+- [ ] **TEL-02**: `gsd_progress` — renders progress table from gsd-tools. Direct handler.
+- [ ] **TEL-03**: `gsd_help` — lists all `gsd_*` Telegram aliases with one-line descriptions. Direct handler.
+- [ ] **TEL-04**: `gsd_health` — runs project health check via gsd-tools. Direct handler.
+- [ ] **TEL-05**: `gsd_settings` — reads and displays `.planning/config.json`. Direct handler.
+- [ ] **TEL-06**: `gsd_update` — git pull → rsync → gateway restart. Direct handler.
+- [ ] **TEL-07**: `gsd_project_list [list|add|remove] [name]` — project registry. Direct handler.
+- [ ] **TEL-08**: `gsd_cleanup` — runs cleanup logic via gsd-tools. Direct handler.
+- [ ] **TEL-09**: All utility handlers return Telegram-friendly text (no markdown tables, ≤4096 chars).
+- [ ] **TEL-10**: Missing required args return a usage hint, not a stack trace.
+
+### Telegram Workflow Aliases
+
+- [ ] **TEL-11**: `gsd_quick <description>` — dispatches to gsd:quick SKILL.md with args.
+- [ ] **TEL-12**: `gsd_new_project` — dispatches to gsd:new-project SKILL.md.
+- [ ] **TEL-13**: `gsd_plan_phase <N>` — dispatches to gsd:plan-phase SKILL.md.
+- [ ] **TEL-14**: `gsd_execute_phase <N>` — dispatches to gsd:execute-phase SKILL.md.
+- [ ] **TEL-15**: `gsd_discuss_phase <N>` — dispatches to gsd:discuss-phase SKILL.md.
+- [ ] **TEL-16**: `gsd_verify_work [N]` — dispatches to gsd:verify-work SKILL.md.
+- [ ] **TEL-17**: `gsd_add_phase <description>` — dispatches to gsd:add-phase SKILL.md.
+- [ ] **TEL-18**: `gsd_new_milestone <version>` — dispatches to gsd:new-milestone SKILL.md.
+- [ ] **TEL-19**: `gsd_complete_milestone <version>` — dispatches to gsd:complete-milestone SKILL.md.
+- [ ] **TEL-20**: `gsd_resume_work` — dispatches to gsd:resume-work SKILL.md.
+- [ ] **TEL-21**: `gsd_pause_work` — dispatches to gsd:pause-work SKILL.md.
+- [ ] **TEL-22**: `gsd_debug [issue]` — dispatches to gsd:debug SKILL.md.
+- [ ] **TEL-23**: `gsd_add_todo [description]` — dispatches to gsd:add-todo SKILL.md.
+- [ ] **TEL-24**: `gsd_check_todos` — dispatches to gsd:check-todos SKILL.md.
+- [ ] **TEL-25**: `gsd_audit_milestone [version]` — dispatches to gsd:audit-milestone SKILL.md.
+- [ ] **TEL-26**: `gsd_add_tests` — dispatches to gsd:add-tests SKILL.md.
+- [ ] **TEL-27**: All workflow aliases pass `$ARGUMENTS` correctly to the underlying skill.
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -119,6 +156,39 @@ Deferred to future release. Tracked but not in current roadmap.
 - Mapped to phases: 28
 - Unmapped: 0 ✓
 
+| TEL-01 | Phase 4 | Pending |
+| TEL-02 | Phase 4 | Pending |
+| TEL-03 | Phase 4 | Pending |
+| TEL-04 | Phase 4 | Pending |
+| TEL-05 | Phase 4 | Pending |
+| TEL-06 | Phase 4 | Pending |
+| TEL-07 | Phase 4 | Pending |
+| TEL-08 | Phase 4 | Pending |
+| TEL-09 | Phase 4 | Pending |
+| TEL-10 | Phase 4 | Pending |
+| TEL-11 | Phase 5 | Pending |
+| TEL-12 | Phase 5 | Pending |
+| TEL-13 | Phase 5 | Pending |
+| TEL-14 | Phase 5 | Pending |
+| TEL-15 | Phase 5 | Pending |
+| TEL-16 | Phase 5 | Pending |
+| TEL-17 | Phase 5 | Pending |
+| TEL-18 | Phase 5 | Pending |
+| TEL-19 | Phase 5 | Pending |
+| TEL-20 | Phase 5 | Pending |
+| TEL-21 | Phase 5 | Pending |
+| TEL-22 | Phase 5 | Pending |
+| TEL-23 | Phase 5 | Pending |
+| TEL-24 | Phase 5 | Pending |
+| TEL-25 | Phase 5 | Pending |
+| TEL-26 | Phase 5 | Pending |
+| TEL-27 | Phase 5 | Pending |
+
+**v1.1 coverage:**
+- TEL requirements: 27 total
+- Mapped to phases: 27
+- Unmapped: 0 ✓
+
 ---
 *Requirements defined: 2026-03-04*
-*Last updated: 2026-03-04 after initial definition*
+*Last updated: 2026-03-05 after v1.1 milestone start*
