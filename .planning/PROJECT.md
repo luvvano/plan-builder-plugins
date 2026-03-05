@@ -12,20 +12,19 @@ OpenClaw users can run `/gsd:new-project`, `/gsd:plan-phase`, `/gsd:execute-phas
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Port all GSD slash commands (27 SKILL.md files) to OpenClaw SKILL.md format — v1.0
+- ✓ Port all GSD agent definitions to OpenClaw-compatible agent prompts (embedded in stage files) — v1.0
+- ✓ Port GSD templates (36 files) and references (13 files) for use within OpenClaw — v1.0
+- ✓ Port GSD workflows (new-project, plan-phase, execute-phase, verify-work + 22 more) — v1.0
+- ✓ Port GSD bin utilities (gsd-tools.cjs) bundled with runtime path resolution — v1.0
+- ✓ Create OpenClaw plugin manifest (openclaw.plugin.json) — v1.0
+- ✓ Ensure multi-agent orchestration works via inline agent context injection — v1.0
 
 ### Active
 
-- [ ] Port all GSD slash commands (~24) to OpenClaw SKILL.md format
-- [ ] Port all GSD agent definitions (~10) to OpenClaw-compatible agent prompts
-- [ ] Port GSD templates (PROJECT.md, REQUIREMENTS.md, ROADMAP.md, etc.) for use within OpenClaw
-- [ ] Port GSD workflows (new-project, plan-phase, execute-phase, etc.) to OpenClaw skill orchestration
-- [ ] Port GSD hooks (context-monitor, check-update, statusline) to OpenClaw service/event system
-- [ ] Port GSD bin utilities (gsd-tools.cjs) for OpenClaw runtime
-- [ ] Create OpenClaw plugin manifest and installation mechanism (ClawHub-compatible)
-- [ ] Ensure multi-agent orchestration works within OpenClaw's agent/tool system
+- [ ] Port GSD hooks (context-monitor, check-update) to OpenClaw service/event system
 - [ ] Provide install/uninstall scripts for OpenClaw users
-- [ ] Write documentation for OpenClaw-specific usage
+- [ ] ClawHub distribution packaging
 
 ### Out of Scope
 
@@ -56,9 +55,13 @@ OpenClaw users can run `/gsd:new-project`, `/gsd:plan-phase`, `/gsd:execute-phas
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Port as OpenClaw plugin (not standalone) | Leverages OpenClaw's native skill/plugin system for discoverability and installation | — Pending |
-| Use SKILL.md format for commands | OpenClaw's standard mechanism for slash commands | — Pending |
-| Reuse gsd-tools.cjs where possible | Avoid rewriting working utility code | — Pending |
+| Port as OpenClaw plugin (not standalone) | Leverages OpenClaw's native skill/plugin system for discoverability and installation | ✓ Good |
+| Use SKILL.md format for commands | OpenClaw's standard mechanism for slash commands | ✓ Good |
+| Reuse gsd-tools.cjs where possible | Avoid rewriting working utility code | ✓ Good |
+| Embed agent roles verbatim in stage files | Self-containment over @-referencing agents/ directory | ✓ Good |
+| GSD_TOOLS_PATH env var for portable paths | Eliminates machine-specific absolute paths | ✓ Good |
+| Auto-mode defaults replace AskUserQuestion | OpenClaw plugins cannot use AskUserQuestion reliably | ✓ Good |
+| Sequential wave execution in v1 | OpenClaw has no synchronization primitive for parallel | ✓ Good |
 
 ---
-*Last updated: 2026-03-04 after initialization*
+*Last updated: 2026-03-05 after v1.0 milestone*
