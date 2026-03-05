@@ -388,8 +388,8 @@ export default function gsdPlugin(api: PluginContext): void {
     description: "List, add, or remove tracked GSD projects. Usage: [list|add|remove] [name/path]",
     acceptsArgs: true,
     requireAuth: false,
-    handler(args) {
-      const parts = (args ?? "").trim().split(/\s+/).filter(Boolean);
+    handler(ctx) {
+      const parts = ((ctx as {args?: string}).args ?? "").trim().split(/\s+/).filter(Boolean);
       const action = parts[0] || "list";
       const target = parts.slice(1).join(" ");
       const tPath = tp();
