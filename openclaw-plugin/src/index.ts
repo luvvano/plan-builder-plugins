@@ -40,7 +40,7 @@ export default function gsdPlugin(api: PluginContext): void {
     },
   });
 
-  // ── Helper: shell out to gsd-tools.cjs ──────────────────────────────
+  // ── Helper: shell out to gsd-tools.cjs (registerTool handlers) ──────────────
   function execGsdTools(subcommand: string): unknown {
     const toolsPath = process.env.GSD_TOOLS_PATH
       ?? join(import.meta.dirname, "..", "bin", "gsd-tools.cjs");
@@ -142,9 +142,13 @@ export default function gsdPlugin(api: PluginContext): void {
   // colons in command names, so SKILL.md is the correct mechanism for gsd:* commands.
   // The registerTool calls above use underscores and work correctly.
 
-  // ── Telegram HTML utility helpers ─────────────────────────────────────────
-  function fmtHtml(text: string): string {
-    return text.length > 4000 ? text.slice(0, 4000) + "\n\n<i>…truncated</i>" : text;
+  // ── Telegram markdown helpers ──────────────────────────────────────────────
+  // OpenClaw renders `text` as markdown → Telegram HTML automatically.
+  // Use **bold**, `code`, ```pre``` — NOT raw <b>/<code> HTML tags.
+
+  function fmt(text: string): string {
+    // Truncate to safe Telegram limit, add note
+    return text.length > 3800 ? text.slice(0, 3800) + "\n\n_…truncated_" : text;
   }
 
   function tp(): string {
@@ -152,10 +156,47 @@ export default function gsdPlugin(api: PluginContext): void {
       ?? join(import.meta.dirname, "..", "bin", "gsd-tools.cjs");
   }
 
+  /** Returns the most recently active GSD project path, or cwd as fallback. */
+  function resolveActiveProjectDir(): string {
+    try {
+      const registryPath = join(homedir(), ".gsd", "projects.json");
+      const registry = JSON.parse(readFileSync(registryPath, "utf8")) as { projects?: Array<{name: string; path: string; last_active: string}> };
+      const projects = registry.projects ?? [];
+      if (projects.length === 0) return process.cwd();
+      // Sort by last_active descending, return the most recently active
+      const sorted = [...projects].sort((a, b) => b.last_active.localeCompare(a.last_active));
+      return sorted[0].path;
+    } catch {
+      return process.cwd();
+    }
+  }
+
+  /** Execute gsd-tools in the active project directory. */
+  function runTools(subcommand: string, cwd?: string): unknown {
+    const toolsPath = tp();
+    const workDir = cwd ?? resolveActiveProjectDir();
+    try {
+      const output = execSync(`node "${toolsPath}" ${subcommand}`, {
+        encoding: "utf8",
+        timeout: 15000,
+        cwd: workDir,
+      });
+      return JSON.parse(output);
+    } catch (e) {
+      return { error: String(e) };
+    }
+  }
+
   function noProject(): string {
-    return fmtHtml(
-      `⚠️ <b>No GSD project found.</b>\n\nCurrent directory: <code>${process.cwd()}</code>\n\nRun <b>/gsd_new_project</b> to initialize a project here, or navigate to an existing GSD project directory first.`
-    );
+    const projectDir = resolveActiveProjectDir();
+    // projectDir is cwd fallback if nothing tracked
+    const hasGsd = existsSync(join(projectDir, ".planning"));
+    if (!hasGsd) {
+      return fmt(
+        `⚠️ **No GSD project found.**\n\nActive directory: ${projectDir}\n\nRun **/gsd_new_project** to initialize a project here, or add your project with **/gsd_project_list add**`
+      );
+    }
+    return "";  // project exists, no error
   }
 
   // ── /gsd_status ───────────────────────────────────────────────────────────
@@ -166,8 +207,9 @@ export default function gsdPlugin(api: PluginContext): void {
     requireAuth: false,
     handler() {
       try {
-        const snap = execGsdTools("state-snapshot") as Record<string, unknown>;
-        if ((snap as Record<string, unknown>).error) return { text: noProject() };
+        const err = noProject(); if (err) return { text: err };
+        const snap = runTools("state-snapshot") as Record<string, unknown>;
+        if ((snap as Record<string, unknown>).error) return { text: noProject() || "No GSD project." };
         const cfg = ((snap as Record<string, unknown>).config ?? {}) as Record<string, unknown>;
         const progress = ((snap as Record<string, unknown>).progress ?? {}) as Record<string, unknown>;
         const milestone = (cfg.milestone ?? "v?") as string;
@@ -179,16 +221,15 @@ export default function gsdPlugin(api: PluginContext): void {
         const bar = "█".repeat(filled) + "░".repeat(10 - filled);
         const phase = (cfg.current_phase ?? (progress as Record<string, unknown>).current_phase ?? "—") as string;
         const status = (cfg.status ?? "active") as string;
-        return { text: fmtHtml([
-          `<b>GSD Project Status</b>`,
-          ``,
-          `Milestone: <b>${milestone}${milestoneName ? " · " + milestoneName : ""}</b>`,
-          `Phase: <code>${phase}</code>`,
-          `Status: <code>${status}</code>`,
-          `Progress: <code>[${bar}] ${done}/${total} plans (${pct}%)</code>`,
+        const name = resolveActiveProjectDir().split("/").pop() ?? "project";
+        return { text: fmt([
+          `**GSD Status — ${name}**`, ``,
+          `Milestone: **${milestone}${milestoneName ? " · " + milestoneName : ""}**`,
+          `Phase: ${phase}  Status: ${status}`,
+          `Progress: [${bar}] ${done}/${total} (${pct}%)`,
         ].join("\n")) };
       } catch {
-        return { text: noProject() };
+        return { text: noProject() || "Error reading project." };
       }
     },
   });
@@ -201,8 +242,9 @@ export default function gsdPlugin(api: PluginContext): void {
     requireAuth: false,
     handler() {
       try {
-        const result = execGsdTools("progress json") as Record<string, unknown>;
-        if ((result as Record<string, unknown>).error) return { text: noProject() };
+        const err = noProject(); if (err) return { text: err };
+        const result = runTools("progress json") as Record<string, unknown>;
+        if ((result as Record<string, unknown>).error) return { text: "No GSD project." };
         const phases = (result.phases ?? []) as Array<Record<string, unknown>>;
         const total = (result.total_plans ?? 0) as number;
         const done = (result.total_summaries ?? 0) as number;
@@ -212,16 +254,15 @@ export default function gsdPlugin(api: PluginContext): void {
         const rows = phases.map(p => {
           const st = p.status as string;
           const icon = st === "Complete" ? "✅" : st === "In Progress" ? "🔄" : "⏳";
-          return `${icon} <b>Phase ${p.number}</b> ${p.name} — <code>${p.summaries}/${p.plans}</code>`;
+          return `${icon} **Phase ${p.number}** ${p.name} — ${p.summaries}/${p.plans}`;
         });
-        return { text: fmtHtml([
-          `<b>GSD Progress</b>`,
-          `<code>[${bar}] ${done}/${total} plans (${pct}%)</code>`,
-          ``,
+        return { text: fmt([
+          `**GSD Progress**`,
+          `[${bar}] ${done}/${total} plans (${pct}%)`, ``,
           ...rows,
         ].join("\n")) };
       } catch {
-        return { text: noProject() };
+        return { text: noProject() || "Error reading project." };
       }
     },
   });
@@ -233,53 +274,53 @@ export default function gsdPlugin(api: PluginContext): void {
     acceptsArgs: false,
     requireAuth: false,
     handler() {
-      return { text: fmtHtml([
-        `<b>GSD Commands for Telegram</b>`,
+      return { text: fmt([
+        `**GSD Commands for Telegram**`,
         ``,
-        `<b>Project:</b>`,
+        `**Project:**`,
         `/gsd_new_project — Initialize new GSD project`,
         `/gsd_map_codebase — Generate codebase map`,
         ``,
-        `<b>Phase Planning:</b>`,
-        `/gsd_discuss_phase &lt;N&gt; — Capture design decisions`,
-        `/gsd_research_phase &lt;N&gt; — Research phase domain`,
-        `/gsd_list_phase_assumptions &lt;N&gt; — Preview approach`,
-        `/gsd_plan_phase &lt;N&gt; — Plan a phase`,
+        `**Phase Planning:**`,
+        `/gsd_discuss_phase <N> — Capture design decisions`,
+        `/gsd_research_phase <N> — Research phase domain`,
+        `/gsd_list_phase_assumptions <N> — Preview approach`,
+        `/gsd_plan_phase <N> — Plan a phase`,
         ``,
-        `<b>Execution:</b>`,
-        `/gsd_execute_phase &lt;N&gt; — Execute plans in phase`,
-        `/gsd_quick &lt;description&gt; — Ad-hoc task`,
+        `**Execution:**`,
+        `/gsd_execute_phase <N> — Execute plans in phase`,
+        `/gsd_quick <description> — Ad-hoc task`,
         ``,
-        `<b>Roadmap:</b>`,
-        `/gsd_add_phase &lt;desc&gt; — Add phase`,
-        `/gsd_insert_phase &lt;N&gt; &lt;desc&gt; — Insert phase`,
-        `/gsd_remove_phase &lt;N&gt; — Remove phase`,
+        `**Roadmap:**`,
+        `/gsd_add_phase <desc> — Add phase`,
+        `/gsd_insert_phase <N> <desc> — Insert phase`,
+        `/gsd_remove_phase <N> — Remove phase`,
         ``,
-        `<b>Milestones:</b>`,
-        `/gsd_new_milestone &lt;version&gt; — Start milestone`,
-        `/gsd_complete_milestone &lt;ver&gt; — Archive milestone`,
+        `**Milestones:**`,
+        `/gsd_new_milestone <version> — Start milestone`,
+        `/gsd_complete_milestone <ver> — Archive milestone`,
         `/gsd_progress — Show progress`,
         ``,
-        `<b>Session:</b>`,
+        `**Session:**`,
         `/gsd_resume_work — Resume from saved state`,
         `/gsd_pause_work — Save state`,
         ``,
-        `<b>Verification:</b>`,
-        `/gsd_verify_work &lt;N&gt; — Verify phase`,
-        `/gsd_audit_milestone &lt;ver&gt; — Full audit`,
+        `**Verification:**`,
+        `/gsd_verify_work <N> — Verify phase`,
+        `/gsd_audit_milestone <ver> — Full audit`,
         `/gsd_add_tests — Add test coverage`,
         ``,
-        `<b>Todos &amp; Debug:</b>`,
-        `/gsd_add_todo &lt;desc&gt; — Add TODO`,
+        `**Todos & Debug:**`,
+        `/gsd_add_todo <desc> — Add TODO`,
         `/gsd_check_todos — Review TODOs`,
-        `/gsd_debug &lt;issue&gt; — Debug workflow`,
+        `/gsd_debug <issue> — Debug workflow`,
         ``,
-        `<b>Config:</b>`,
-        `/gsd_set_profile &lt;profile&gt; — Set model profile`,
+        `**Config:**`,
+        `/gsd_set_profile <profile> — Set model profile`,
         `/gsd_settings — Show config`,
         `/gsd_health — Health check`,
         ``,
-        `<b>Utility:</b>`,
+        `**Utility:**`,
         `/gsd_status — Project status`,
         `/gsd_update — Update plugin from GitHub`,
         `/gsd_project_list — Tracked projects`,
@@ -297,20 +338,20 @@ export default function gsdPlugin(api: PluginContext): void {
     requireAuth: false,
     handler() {
       try {
-        const result = execGsdTools("validate health") as Record<string, unknown>;
+        const result = runTools("validate health") as Record<string, unknown>;
         if ((result as Record<string, unknown>).error) return { text: noProject() };
         const healthy = (result.healthy ?? result.valid ?? false) as boolean;
         const issues = (result.issues ?? []) as string[];
         const warnings = (result.warnings ?? []) as string[];
         const lines = [
-          `<b>GSD Health Check</b>`,
+          `**GSD Health Check**`,
           ``,
           healthy ? `✅ Project is healthy` : `❌ Issues found`,
-          ...issues.map((i: string) => `• <code>${i}</code>`),
+          ...issues.map((i: string) => `• ${i}`),
           ...(warnings.length > 0 ? [``, `⚠️ Warnings:`] : []),
           ...warnings.map((w: string) => `• ${w}`),
         ];
-        return { text: fmtHtml(lines.join("\n")) };
+        return { text: fmt(lines.join("\n")) };
       } catch {
         return { text: noProject() };
       }
@@ -330,7 +371,7 @@ export default function gsdPlugin(api: PluginContext): void {
       const tPath = tp();
 
       if (action === "remove" && !target) {
-        return { text: `Usage: <b>/gsd_project_list remove &lt;name&gt;</b>` };
+        return { text: `Usage: **/gsd_project_list remove <name>**` };
       }
 
       try {
@@ -349,24 +390,24 @@ export default function gsdPlugin(api: PluginContext): void {
         if (action === "list") {
           const projects = (result.projects ?? []) as Array<{name: string; path: string; added: string; last_active: string}>;
           if (projects.length === 0) {
-            return { text: fmtHtml(`<b>GSD Projects</b>\n\nNo projects tracked yet.\n\nAdd current project: <b>/gsd_project_list add</b>`) };
+            return { text: fmt(`**GSD Projects**\n\nNo projects tracked yet.\n\nAdd current project: **/gsd_project_list add**`) };
           }
           const rows = projects.map((p, i) =>
-            `${i + 1}. <b>${p.name}</b>\n   <code>${p.path}</code>\n   Added: ${p.added} · Active: ${p.last_active}`
+            `${i + 1}. **${p.name}**\n   `${p.path}`\n   Added: ${p.added} · Active: ${p.last_active}`
           ).join("\n\n");
-          return { text: fmtHtml(`<b>GSD Projects</b> (${projects.length})\n\n${rows}\n\n/gsd_project_list add — register\n/gsd_project_list remove &lt;name&gt; — unregister`) };
+          return { text: fmt(`**GSD Projects** (${projects.length})\n\n${rows}\n\n/gsd_project_list add — register\n/gsd_project_list remove <name> — unregister`) };
         }
         if (action === "add") {
-          return { text: fmtHtml(`✅ Registered: <b>${result.name as string}</b>\n<code>${result.path as string}</code>`) };
+          return { text: `✅ Registered: **${result.name as string}**\n${result.path as string}` };
         }
         if (action === "remove") {
           return result.removed
-            ? { text: `✅ Removed: <b>${target}</b>` }
-            : { text: `Project not found: <b>${target}</b>\n\nRun <b>/gsd_project_list</b> to see tracked projects.` };
+            ? { text: `✅ Removed: **${target}**` }
+            : { text: `Project not found: **${target}**\n\nRun **/gsd_project_list** to see tracked projects.` };
         }
-        return { text: `<pre>${JSON.stringify(result, null, 2)}</pre>` };
+        return { text: JSON.stringify(result, null, 2) };
       } catch (e) {
-        return { text: `<b>Error:</b> <code>${String(e).slice(0, 300)}</code>` };
+        return { text: `Error: ${String(e).slice(0, 300)}` };
       }
     },
   });
@@ -390,15 +431,15 @@ export default function gsdPlugin(api: PluginContext): void {
             }
           }
         }
-        return { text: fmtHtml([
-          `<b>GSD Cleanup</b>`,
+        return { text: fmt([
+          `**GSD Cleanup**`,
           ``,
           cleaned.length > 0
-            ? `✅ Removed ${cleaned.length} temp file(s):\n${cleaned.map((f: string) => `• <code>${f}</code>`).join("\n")}`
+            ? `✅ Removed ${cleaned.length} temp file(s):\n${cleaned.map((f: string) => `• ${f}`).join("\n")}`
             : `✅ Nothing to clean up — project is tidy`,
         ].join("\n")) };
       } catch (e) {
-        return { text: `<b>Error:</b> <code>${String(e).slice(0, 200)}</code>` };
+        return { text: `Error: ${String(e).slice(0, 200)}` };
       }
     },
   });
@@ -425,7 +466,7 @@ export default function gsdPlugin(api: PluginContext): void {
       try {
         if (existsSync(join(repoDir, ".git"))) {
           const pullOut = execSync(`git -C "${repoDir}" pull --ff-only`, { encoding: "utf8", timeout: 30000 });
-          const msg = (pullOut.trim() || "Already up to date.").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          const msg = pullOut.trim() || "Already up to date.";
           log.push(`📡 ${msg}`);
         } else {
           log.push(`📡 Cloning repo...`);
@@ -433,7 +474,7 @@ export default function gsdPlugin(api: PluginContext): void {
           log.push(`Cloned successfully.`);
         }
       } catch (e) {
-        return { text: `❌ Git error:\n<code>${String(e).slice(0, 300)}</code>` };
+        return { text: `❌ Git error: ${String(e).slice(0, 300)}` };
       }
 
       let commitHash = "";
@@ -453,7 +494,7 @@ export default function gsdPlugin(api: PluginContext): void {
           cpSync(pluginSrc, installDir, { recursive: true, filter: (s: string) => !s.includes("node_modules") });
           log.push(`📦 Files copied (cpSync)`);
         } catch (e2) {
-          return { text: `❌ Copy error:\n<code>${String(e2).slice(0, 200)}</code>` };
+          return { text: `❌ Copy error: ${String(e2).slice(0, 200)}` };
         }
       }
 
@@ -461,15 +502,15 @@ export default function gsdPlugin(api: PluginContext): void {
         execSync("openclaw gateway restart", { encoding: "utf8", timeout: 15000 });
         log.push(`🔄 Gateway restarted`);
       } catch {
-        log.push(`⚠️ Gateway restart failed — run: <code>openclaw gateway restart</code>`);
+        log.push(`⚠️ Gateway restart failed — run: `openclaw gateway restart``);
       }
 
       const versionLine = oldVersion === newVersion
-        ? `Version: <b>${newVersion}</b>${commitHash ? ` @ <code>${commitHash}</code>` : ""}`
-        : `Version: <b>${oldVersion}</b> → <b>${newVersion}</b>${commitHash ? ` @ <code>${commitHash}</code>` : ""}`;
+        ? `Version: **${newVersion}**${commitHash ? ` @ ${commitHash}` : ""}`
+        : `Version: **${oldVersion}** → **${newVersion}**${commitHash ? ` @ ${commitHash}` : ""}`;
 
-      return { text: fmtHtml([
-        `✅ <b>GSD plugin updated</b>`, ``, versionLine, ``, ...log, ``, `Changes are live.`,
+      return { text: fmt([
+        `✅ **GSD plugin updated**`, ``, versionLine, ``, ...log, ``, `Changes are live.`,
       ].join("\n")) };
     },
   });
@@ -485,7 +526,9 @@ export default function gsdPlugin(api: PluginContext): void {
         const configPath = join(process.cwd(), ".planning", "config.json");
         const raw = readFileSync(configPath, "utf8");
         const cfg = JSON.parse(raw) as Record<string, unknown>;
-        return { text: fmtHtml(`<b>GSD Settings</b>\n\n<pre>${JSON.stringify(cfg, null, 2)}</pre>`) };
+        return { text: fmt(`**GSD Settings**\n\n```
+${JSON.stringify(cfg, null, 2)}
+````) };
       } catch {
         return { text: noProject() };
       }
