@@ -14,6 +14,7 @@ import { readFileSync, existsSync, cpSync } from "node:fs";
 import { homedir } from "node:os";
 import { Type } from "@sinclair/typebox";
 import type { PluginContext } from "openclaw/plugin-sdk/core";
+import { tracerHit } from "../../openclaw_tracer/src/client.js";
 
 export default function gsdPlugin(api: PluginContext): void {
   const cfg = api.config?.plugins?.entries?.["gsd-for-openclaw"]?.config ?? {};
@@ -206,6 +207,7 @@ export default function gsdPlugin(api: PluginContext): void {
     acceptsArgs: false,
     requireAuth: false,
     handler() {
+      tracerHit("command", "gsd_status");
       try {
         const err = noProject(); if (err) return { text: err };
         const snap = runTools("state-snapshot") as Record<string, unknown>;
@@ -241,6 +243,7 @@ export default function gsdPlugin(api: PluginContext): void {
     acceptsArgs: false,
     requireAuth: false,
     handler() {
+      tracerHit("command", "gsd_progress");
       try {
         const err = noProject(); if (err) return { text: err };
         const roadmap = runTools("roadmap analyze") as Record<string, unknown>;
@@ -298,6 +301,7 @@ export default function gsdPlugin(api: PluginContext): void {
     acceptsArgs: false,
     requireAuth: false,
     handler() {
+      tracerHit("command", "gsd_help");
       return { text: fmt([
         `**GSD Commands for Telegram**`,
         ``,
@@ -362,6 +366,7 @@ export default function gsdPlugin(api: PluginContext): void {
     acceptsArgs: false,
     requireAuth: false,
     handler() {
+      tracerHit("command", "gsd_health");
       try {
         const result = runTools("validate health") as Record<string, unknown>;
         if ((result as Record<string, unknown>).error) return { text: noProject() };
@@ -390,6 +395,7 @@ export default function gsdPlugin(api: PluginContext): void {
     acceptsArgs: true,
     requireAuth: false,
     handler(ctx) {
+      tracerHit("command", "gsd_project_list");
       const parts = ((ctx as {args?: string}).args ?? "").trim().split(/\s+/).filter(Boolean);
       const action = parts[0] || "list";
       const target = parts.slice(1).join(" ");
@@ -450,6 +456,7 @@ export default function gsdPlugin(api: PluginContext): void {
     acceptsArgs: true,
     requireAuth: false,
     handler(ctx) {
+      tracerHit("command", "gsd_set_project");
       const query = ((ctx as {args?: string}).args ?? "").trim();
       if (!query) {
         // Show list with numbers for easy selection
@@ -513,6 +520,7 @@ export default function gsdPlugin(api: PluginContext): void {
     acceptsArgs: false,
     requireAuth: false,
     handler() {
+      tracerHit("command", "gsd_cleanup");
       try {
         const { readdirSync, unlinkSync, statSync, existsSync: fsExists } = require("fs") as typeof import("fs");
         const researchDir = join(process.cwd(), ".planning", "research");
@@ -545,6 +553,7 @@ export default function gsdPlugin(api: PluginContext): void {
     acceptsArgs: false,
     requireAuth: false,
     handler() {
+      tracerHit("command", "gsd_update");
       const home = homedir();
       const repoDir = join(home, "projects", "plan-builder-plugins");
       const pluginSrc = join(repoDir, "openclaw-plugin");
@@ -621,6 +630,7 @@ export default function gsdPlugin(api: PluginContext): void {
     acceptsArgs: false,
     requireAuth: false,
     handler() {
+      tracerHit("command", "gsd_settings");
       try {
         const configPath = join(resolveActiveProjectDir(), ".planning", "config.json");
         const raw = readFileSync(configPath, "utf8");
