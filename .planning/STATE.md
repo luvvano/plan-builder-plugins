@@ -126,3 +126,64 @@ Resume file: None
 - Note: openclaw update requires npm access; don't include by default
 
 **Not blocking Phase 5. Do as quick task after Phase 5 execution.**
+
+---
+
+## Bug Log — 2026-03-05 (Session Fixes)
+
+### BUG-1: ParseError: Unexpected character '⚠' (jiti)
+**Root cause:** jiti (TypeScript runtime OpenClaw uses) does NOT support escaped backticks (`\``) inside template literals. An unclosed template literal (missing closing `` ` ``) caused jiti to treat `⚠️` on the next line as an unexpected token.
+
+**Fix:** Remove ALL `\`` from template literals. Never use `` `code` `` formatting for dynamic values inside a template literal — just use plain `${expr}` or string concatenation.
+
+**Rule going forward:** In plugin `src/index.ts`, NEVER use `\`` inside template literals. Use plain text for inline code values.
+
+---
+
+### BUG-2: ParseError: Unexpected token "," (nested template literals)
+**Root cause:** After removing `\``, raw backtick characters remained inside outer template literals (e.g. `` `text `${p.path}` text` ``), creating illegal nesting.
+
+**Fix:** Remove backtick code formatting entirely from inside template literal string interpolations.
+
+---
+
+### BUG-3: HTML tags rendered as literal text in Telegram
+**Root cause:** Plugin `text` field is processed by `markdownToTelegramHtml()` in OpenClaw before sending. Raw HTML (`<b>`, `<code>`) gets escaped/mangled by the Markdown parser.
+
+**Fix:** Use Markdown syntax: `**bold**`, `` `code` `` — NOT `<b>`, `<code>` HTML tags.
+
+---
+
+### BUG-4: Commands operate on /home/egor instead of project directory
+**Root cause:** Gateway daemon `process.cwd()` is always `/home/egor` (the user's home dir), not the project.
+
+**Fix:** `resolveActiveProjectDir()` reads `~/.gsd/projects.json`, sorts by `last_active` desc, returns `projects[0].path`.
+
+---
+
+### BUG-5: `registerCommand` rejects colon in command names
+**Root cause:** OpenClaw validates command names — only `[a-zA-Z0-9_-]` allowed. `gsd:status` fails, `gsd_status` passes.
+
+**Fix:** Use underscore aliases (`gsd_*`) in `registerCommand`. Use colon form (`gsd:*`) only in SKILL.md `name:` field.
+
+---
+
+### BUG-6: `gsd_update` shows "Gateway restart failed"
+**Root cause:** `execSync("openclaw gateway restart")` kills the gateway process that is running the handler. `execSync` throws because the process dies under it.
+
+**Fix:** Use `spawn("openclaw", ["gateway", "restart"], { detached: true, stdio: "ignore" }); child.unref()`. The child process detaches and restarts independently.
+
+---
+
+### BUG-7: `gsd_project_list` args crash
+**Root cause:** `handler(args)` receives `ctx: PluginCommandContext` (object), not a string. Calling `.trim()` on an object throws TypeError.
+
+**Fix:** Use `handler(ctx)` and read `(ctx as {args?: string}).args` for the actual string.
+
+---
+
+### BUG-8: `setMyCommands` silently skipped — wrong botToken path
+**Root cause:** Code read `api.config.telegram.botToken` but OpenClaw config stores it at `api.config.channels.telegram.botToken`.
+
+**Fix:** `const token = (api.config as any).channels?.telegram?.botToken`
+
