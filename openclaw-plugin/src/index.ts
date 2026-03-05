@@ -14,7 +14,7 @@ import { readFileSync, existsSync, cpSync } from "node:fs";
 import { homedir } from "node:os";
 import { Type } from "@sinclair/typebox";
 import type { PluginContext } from "openclaw/plugin-sdk/core";
-import { tracerHit } from "../../openclaw_tracer/src/client.js";
+import { tracerHit } from "./tracer-client.js";
 
 export default function gsdPlugin(api: PluginContext): void {
   const cfg = api.config?.plugins?.entries?.["gsd-for-openclaw"]?.config ?? {};
