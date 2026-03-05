@@ -20,14 +20,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **CMD-01**: All 24 GSD slash commands are implemented as individual SKILL.md files in `skills/workflows/`
 - [ ] **CMD-02**: Each SKILL.md has correct YAML frontmatter (name, description, user-invocable, os gating)
-- [ ] **CMD-03**: Core 4 commands work end-to-end: new-project, plan-phase, execute-phase, verify-work
-- [ ] **CMD-04**: All commands default to `--auto` mode (no AskUserQuestion dependency)
+- [x] **CMD-03**: Core 4 commands work end-to-end: new-project, plan-phase, execute-phase, verify-work
+- [x] **CMD-04**: All commands default to `--auto` mode (no AskUserQuestion dependency)
 - [ ] **CMD-05**: `/gsd:help` command lists all registered commands organized by workflow stage
 
 ### Agents
 
-- [ ] **AGNT-01**: All 10+ GSD agent roles are implemented as SKILL.md files in `skills/agents/`
-- [ ] **AGNT-02**: Agent SKILL.md files contain the full role system prompt from the original GSD agent definitions
+- [x] **AGNT-01**: All 10+ GSD agent roles are implemented as SKILL.md files in `skills/agents/`
+- [x] **AGNT-02**: Agent SKILL.md files contain the full role system prompt from the original GSD agent definitions
 - [ ] **AGNT-03**: Workflow SKILL.md files can inline-inject agent SKILL.md content for orchestration
 
 ### Orchestration
@@ -91,10 +91,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | FOUND-04 | Phase 1 | Pending |
 | FOUND-05 | Phase 1 | Pending |
 | FOUND-06 | Phase 1 | Pending |
-| CMD-03 | Phase 2 | Pending |
-| CMD-04 | Phase 2 | Pending |
-| AGNT-01 | Phase 2 | Pending |
-| AGNT-02 | Phase 2 | Pending |
+| CMD-03 | Phase 2 | Complete |
+| CMD-04 | Phase 2 | Complete |
+| AGNT-01 | Phase 2 | Complete |
+| AGNT-02 | Phase 2 | Complete |
 | AGNT-03 | Phase 2 | Pending |
 | ORCH-01 | Phase 2 | Pending |
 | ORCH-02 | Phase 2 | Pending |
