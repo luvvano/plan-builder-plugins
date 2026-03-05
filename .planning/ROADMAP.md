@@ -72,5 +72,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-03-04 |
 | 2. Core Workflows | 0/TBD | Not started | - |
-| 3. Full Command Set | 3/5 | In Progress|  |
+| 3. Full Command Set | 4/5 | In Progress|  |
 | 4. Lifecycle and Distribution | 0/TBD | Not started | - |
