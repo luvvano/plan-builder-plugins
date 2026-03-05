@@ -740,8 +740,23 @@ export default function gsdPlugin(api: PluginContext): void {
       return;
     }
     try {
+      // Delay to let OpenClaw register its own commands first
+      await new Promise(r => setTimeout(r, 3000));
+
+      // Fetch existing commands first, then merge to avoid overwriting base OpenClaw commands
+      const existingRes = await fetch(`https://api.telegram.org/bot${token}/getMyCommands`);
+      const existingData = await existingRes.json() as { ok: boolean; result?: Array<{ command: string; description: string }> };
+      const existing = existingData.ok ? (existingData.result ?? []) : [];
+
+      // Merge: keep existing commands, add/update GSD commands (dedup by command name)
+      const gsdNames = new Set(GSD_COMMANDS.map((c: { command: string }) => c.command));
+      const merged = [
+        ...existing.filter((c: { command: string }) => !gsdNames.has(c.command)),
+        ...GSD_COMMANDS,
+      ];
+
       const url = `https://api.telegram.org/bot${token}/setMyCommands`;
-      const body = JSON.stringify({ commands: GSD_COMMANDS });
+      const body = JSON.stringify({ commands: merged });
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -749,7 +764,7 @@ export default function gsdPlugin(api: PluginContext): void {
       });
       const data = await res.json() as { ok: boolean; description?: string };
       if (data.ok) {
-        api.logger.info(`[gsd] setMyCommands: registered ${GSD_COMMANDS.length} commands`);
+        api.logger.info(`[gsd] setMyCommands: registered ${GSD_COMMANDS.length} GSD + ${existing.length} existing = ${merged.length} total commands`);
       } else {
         api.logger.warn(`[gsd] setMyCommands failed: ${data.description ?? "unknown error"}`);
       }
