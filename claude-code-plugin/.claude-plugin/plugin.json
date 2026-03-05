@@ -1,9 +1,0 @@
-{
-  "name": "plan-builder-cc",
-  "version": "1.0.0",
-  "description": "Plan builder for coding tasks: generates PROJECT.md and ROADMAP.md",
-  "author": {
-    "name": "Egor Proskyrin",
-    "email": "egor@luvvano.com"
-  }
-}
