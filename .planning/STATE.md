@@ -100,7 +100,7 @@ None.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | Update README.md with installation guide for OpenClaw environment | 2026-03-05 | c54279f | [1-update-readme-md-so-it-will-contain-inst](./quick/1-update-readme-md-so-it-will-contain-inst/) |
-| 2 | Add gsd:project-list command — persistent project tracking | 2026-03-05 | — | [2-add-gsd-project-list-command](./quick/2-add-gsd-project-list-command/) |
+| 2 | Add gsd:project-list command — persistent project tracking | 2026-03-05 | 6d9295d | [2-add-gsd-project-list-command](./quick/2-add-gsd-project-list-command/) |
 
 ### Blockers/Concerns
 
