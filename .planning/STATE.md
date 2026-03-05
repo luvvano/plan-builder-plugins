@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 Phase: 3 of 4 (Full Command Set) — COMPLETE
 Plan: 5 of 5 in current phase
 Status: Phase 3 complete — All 5 plans (03-01 through 03-05) complete
-Last activity: 2026-03-05 - Completed quick task 1: Update README.md with installation guide for OpenClaw environment
+Last activity: 2026-03-05 - Completed quick task 2: Add gsd:project-list command — persistent project tracking
 
 Progress: [██████████] 100% (12/12 plans)
 
@@ -100,6 +100,7 @@ None.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | Update README.md with installation guide for OpenClaw environment | 2026-03-05 | c54279f | [1-update-readme-md-so-it-will-contain-inst](./quick/1-update-readme-md-so-it-will-contain-inst/) |
+| 2 | Add gsd:project-list command — persistent project tracking | 2026-03-05 | 6d9295d | [2-add-gsd-project-list-command](./quick/2-add-gsd-project-list-command/) |
 
 ### Blockers/Concerns
 

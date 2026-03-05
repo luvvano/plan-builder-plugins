@@ -198,6 +198,7 @@ export default function gsdPlugin(api: PluginContext): void {
           "  /gsd:health                    — Project health check",
           "",
           "**Utility:**",
+          "  /gsd:project-list              — List/add/remove tracked GSD projects",
           "  /gsd:cleanup                   — Clean up GSD artifacts",
           "  /gsd:help                      — This help listing",
           "  /gsd:status                    — Show project status",
@@ -206,6 +207,61 @@ export default function gsdPlugin(api: PluginContext): void {
           `GSD_TOOLS_PATH: ${process.env.GSD_TOOLS_PATH ?? "(not set)"}`,
         ].join("\n"),
       };
+    },
+  });
+
+  // ── /gsd:project-list — persistent project registry ─────────────────────
+  api.registerCommand({
+    name: "gsd:project-list",
+    description: "List, add, or remove tracked GSD projects (~/.gsd/projects.json)",
+    acceptsArgs: true,
+    requireAuth: false,
+    handler(args) {
+      const parts = (args ?? "").trim().split(/\s+/).filter(Boolean);
+      const action = parts[0] || "list";
+      const pathArg = parts[1] ?? "";
+
+      const toolsPath = process.env.GSD_TOOLS_PATH
+        ?? join(import.meta.dirname, "..", "bin", "gsd-tools.cjs");
+
+      try {
+        const subcmd = pathArg
+          ? `project-list ${action} "${pathArg}"`
+          : `project-list ${action}`;
+        const raw = execSync(`node "${toolsPath}" ${subcmd}`, {
+          encoding: "utf8",
+          timeout: 10000,
+        });
+        const result = JSON.parse(raw) as Record<string, unknown>;
+
+        if (action === "list") {
+          const projects = result.projects as Array<{name: string; path: string; added: string; last_active: string}>;
+          if (!projects || projects.length === 0) {
+            return { text: "No GSD projects tracked yet.\n\nTo register a project: **/gsd:project-list add** (from project directory)" };
+          }
+          const rows = projects.map((p, i) =>
+            `${i + 1}. **${p.name}**\n   Path: \`${p.path}\`\n   Added: ${p.added} · Active: ${p.last_active}`
+          ).join("\n\n");
+          return { text: `**GSD Projects** (${projects.length})\n\n${rows}\n\nUse **/gsd:project-list add** to register, **/gsd:project-list remove <name>** to unregister.` };
+        }
+
+        if (action === "add") {
+          const name = result.name as string;
+          const path = result.path as string;
+          return { text: `✅ Registered: **${name}**\n\`${path}\`` };
+        }
+
+        if (action === "remove") {
+          if (result.removed) {
+            return { text: `✅ Removed: **${pathArg}**` };
+          }
+          return { text: `Project not found: **${pathArg}**` };
+        }
+
+        return { text: JSON.stringify(result, null, 2) };
+      } catch (e) {
+        return { text: `Error: ${String(e)}` };
+      }
     },
   });
 

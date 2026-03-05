@@ -81,6 +81,16 @@ If `commit_docs` is true:
 node "$GSD_TOOLS_PATH" commit "docs: initialize GSD project with roadmap and requirements" --files ".planning/"
 ```
 
+## Step 5.5: Register Project
+
+Register the project in the global GSD project registry (`~/.gsd/projects.json`):
+
+```bash
+node "$GSD_TOOLS_PATH" project-list add .
+```
+
+This allows `/gsd:project-list` to track all projects the user has initialized with GSD.
+
 ## Step 6: Summary
 
 Report to the user:

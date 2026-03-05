@@ -580,6 +580,17 @@ async function main() {
       break;
     }
 
+    case 'project-list': {
+      const action = args[1] || 'list';
+      const pathArg = args[2] || null;
+      // For 'add': resolve to absolute path (or use cwd). For 'remove': pass raw (name or path).
+      const resolvedArg = action === 'remove'
+        ? (pathArg || null)
+        : (pathArg ? path.resolve(pathArg) : cwd);
+      commands.cmdProjectList(action, resolvedArg, raw);
+      break;
+    }
+
     default:
       error(`Unknown command: ${command}`);
   }
