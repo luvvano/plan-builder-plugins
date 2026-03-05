@@ -114,3 +114,15 @@ None.
 Last session: 2026-03-05
 Stopped at: Completed 03-05-PLAN.md
 Resume file: None
+
+## Quick Task: gsd:update OpenClaw Support (2026-03-05)
+
+**Scope:** Add optional OpenClaw self-update to `gsd:update` SKILL.md.
+
+**Implementation:**
+- Add `--openclaw` flag to `gsd:update` SKILL.md
+- New step: `npm install -g openclaw@latest` (only when flag provided)
+- Report old → new OpenClaw version
+- Note: openclaw update requires npm access; don't include by default
+
+**Not blocking Phase 5. Do as quick task after Phase 5 execution.**
