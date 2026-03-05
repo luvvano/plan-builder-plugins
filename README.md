@@ -10,6 +10,12 @@ plan-builder-plugins/
 
 ---
 
+## Installation
+
+```bash
+git clone https://github.com/luvvano/plan-builder-plugins.git && cd plan-builder-plugins && ./install.sh
+```
+
 ## Quick start
 
 ### OpenClaw (GSD plugin)
