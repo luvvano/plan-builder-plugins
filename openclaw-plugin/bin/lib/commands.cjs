@@ -532,6 +532,95 @@ function cmdScaffold(cwd, type, options, raw) {
   output({ created: true, path: relPath }, raw, relPath);
 }
 
+function cmdProjectList(action, projectPath, raw) {
+  const gsdDir = path.join(process.env.HOME || process.env.USERPROFILE || '~', '.gsd');
+  const registryPath = path.join(gsdDir, 'projects.json');
+
+  // Read existing registry (or empty)
+  let registry = { version: 1, projects: [] };
+  try {
+    if (fs.existsSync(registryPath)) {
+      registry = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
+      if (!Array.isArray(registry.projects)) registry.projects = [];
+    }
+  } catch {}
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const act = action || 'list';
+
+  if (act === 'list') {
+    output({ projects: registry.projects, count: registry.projects.length }, raw,
+      registry.projects.length === 0
+        ? 'No GSD projects tracked yet. Use: gsd-tools project-list add .'
+        : registry.projects.map(p => `${p.name} — ${p.path} (added: ${p.added}, active: ${p.last_active})`).join('\n')
+    );
+    return;
+  }
+
+  if (act === 'add') {
+    const absPath = projectPath ? path.resolve(projectPath) : process.cwd();
+
+    // Try to read project name from PROJECT.md
+    let name = path.basename(absPath);
+    try {
+      const projectMd = path.join(absPath, '.planning', 'PROJECT.md');
+      if (fs.existsSync(projectMd)) {
+        const content = fs.readFileSync(projectMd, 'utf-8');
+        const titleMatch = content.match(/^#\s+(.+)/m);
+        if (titleMatch) name = titleMatch[1].trim();
+      }
+    } catch {}
+
+    // Update or insert
+    const existing = registry.projects.findIndex(p => p.path === absPath);
+    if (existing !== -1) {
+      registry.projects[existing].last_active = today;
+      registry.projects[existing].name = name;
+    } else {
+      registry.projects.push({ name, path: absPath, added: today, last_active: today });
+    }
+
+    // Write registry (create ~/.gsd/ if needed)
+    try {
+      if (!fs.existsSync(gsdDir)) fs.mkdirSync(gsdDir, { recursive: true });
+      fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2), 'utf-8');
+    } catch (e) {
+      error('Failed to write project registry: ' + e.message);
+    }
+
+    output({ added: true, name, path: absPath }, raw, `Registered: ${name} (${absPath})`);
+    return;
+  }
+
+  if (act === 'remove') {
+    const target = projectPath;
+    if (!target) error('remove requires a name or path argument');
+
+    const before = registry.projects.length;
+    registry.projects = registry.projects.filter(p =>
+      p.name !== target && p.path !== path.resolve(target)
+    );
+    const removed = before - registry.projects.length;
+
+    if (removed === 0) {
+      output({ removed: false, reason: 'not_found', target }, raw, `Not found: ${target}`);
+      return;
+    }
+
+    try {
+      fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2), 'utf-8');
+    } catch (e) {
+      error('Failed to write project registry: ' + e.message);
+    }
+
+    output({ removed: true, count: removed, target }, raw, `Removed: ${target}`);
+    return;
+  }
+
+  error(`Unknown project-list action: ${act}. Available: list, add, remove`);
+}
+
 module.exports = {
   cmdGenerateSlug,
   cmdCurrentTimestamp,
@@ -545,4 +634,5 @@ module.exports = {
   cmdProgressRender,
   cmdTodoComplete,
   cmdScaffold,
+  cmdProjectList,
 };
