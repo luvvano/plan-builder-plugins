@@ -556,4 +556,62 @@ export default function gsdPlugin(api: PluginContext): void {
       }
     },
   });
+
+  // ── Telegram bot command menu ──────────────────────────────────────────────
+  const GSD_COMMANDS = [
+    // Utility (Phase 4)
+    { command: "gsd_status",              description: "Show GSD project status" },
+    { command: "gsd_progress",            description: "Show phase progress and roadmap" },
+    { command: "gsd_help",                description: "List all GSD commands" },
+    { command: "gsd_health",              description: "Run project health check" },
+    { command: "gsd_settings",            description: "Show project configuration" },
+    { command: "gsd_cleanup",             description: "Clean up temp research files" },
+    { command: "gsd_update",              description: "Update plugin from GitHub" },
+    { command: "gsd_project_list",        description: "List or manage tracked projects" },
+    // Workflow (Phase 5)
+    { command: "gsd_quick",               description: "Run an ad-hoc GSD task" },
+    { command: "gsd_new_project",         description: "Initialize a new GSD project" },
+    { command: "gsd_discuss_phase",       description: "Capture design decisions for a phase" },
+    { command: "gsd_plan_phase",          description: "Plan a phase with research" },
+    { command: "gsd_execute_phase",       description: "Execute plans in a phase" },
+    { command: "gsd_verify_work",         description: "Verify phase deliverables" },
+    { command: "gsd_add_phase",           description: "Add a new phase to the roadmap" },
+    { command: "gsd_insert_phase",        description: "Insert a phase at a position" },
+    { command: "gsd_remove_phase",        description: "Remove a phase from the roadmap" },
+    { command: "gsd_new_milestone",       description: "Start a new milestone" },
+    { command: "gsd_complete_milestone",  description: "Archive and complete a milestone" },
+    { command: "gsd_resume_work",         description: "Resume from saved project state" },
+    { command: "gsd_pause_work",          description: "Save state and pause work" },
+    { command: "gsd_debug",               description: "Debug a project workflow issue" },
+    { command: "gsd_add_todo",            description: "Add a TODO item" },
+    { command: "gsd_check_todos",         description: "Review and triage TODOs" },
+    { command: "gsd_audit_milestone",     description: "Full milestone audit" },
+    { command: "gsd_add_tests",           description: "Add test coverage to current phase" },
+  ] as const;
+
+  api.on("gateway_start", async () => {
+    const tgCfg = (api.config as Record<string, unknown>).telegram as Record<string, unknown> | undefined;
+    const token = tgCfg?.botToken as string | undefined;
+    if (!token) {
+      api.logger.warn("[gsd] setMyCommands skipped: no Telegram botToken in config");
+      return;
+    }
+    try {
+      const url = `https://api.telegram.org/bot${token}/setMyCommands`;
+      const body = JSON.stringify({ commands: GSD_COMMANDS });
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+      const data = await res.json() as { ok: boolean; description?: string };
+      if (data.ok) {
+        api.logger.info(`[gsd] setMyCommands: registered ${GSD_COMMANDS.length} commands`);
+      } else {
+        api.logger.warn(`[gsd] setMyCommands failed: ${data.description ?? "unknown error"}`);
+      }
+    } catch (e) {
+      api.logger.warn(`[gsd] setMyCommands error: ${String(e).slice(0, 200)}`);
+    }
+  });
 }
