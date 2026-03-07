@@ -5,6 +5,31 @@ user-invocable: true
 os: ["darwin", "linux"]
 ---
 
+## Step 0: Validate Active Project
+
+**Before anything else**, resolve the active project:
+
+```bash
+PROJECT_DIR="${GSD_CURRENT_PROJECT_DIR:-}"
+```
+
+**If `PROJECT_DIR` is empty**, stop and reply:
+```
+⚠️ **No active project set.**
+
+Set one first:
+• /gsd_set_project <name> — switch to a tracked project
+• /gsd_project_list add — add a new project
+
+Run /gsd_project_list to see all tracked projects.
+```
+
+**If set**, use `PROJECT_DIR` as the working directory for ALL subsequent operations (gsd-tools calls, file reads/writes, git commands).
+
+---
+
+
+
 # /gsd:execute-phase
 
 Execute all plans in a GSD roadmap phase.
