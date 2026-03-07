@@ -720,6 +720,172 @@ export default function gsdPlugin(api: PluginContext): void {
     },
   });
 
+  // ── Workflow command helpers ───────────────────────────────────────────────
+
+  /** Returns active project dir or an error response object. */
+  function requireProject(): { dir: string } | { text: string } {
+    const dir = process.env.GSD_CURRENT_PROJECT_DIR;
+    if (!dir) {
+      return {
+        text: fmt(
+          "⚠️ **No active project set.**\n\n" +
+          "Set one first:\n" +
+          "• `/gsd_set_project <name>` — switch to a tracked project\n" +
+          "• `/gsd_project_list add` — add a new project\n\n" +
+          "Run `/gsd_project_list` to see all tracked projects."
+        ),
+      };
+    }
+    if (!existsSync(join(dir, ".planning"))) {
+      return {
+        text: fmt(
+          `⚠️ **Active project has no .planning directory:**\n\`${dir}\`\n\n` +
+          "Run `/gsd_new_project` to initialize it as a GSD project."
+        ),
+      };
+    }
+    return { dir };
+  }
+
+  /** Format "project header" shown at the top of workflow command responses. */
+  function projectHeader(dir: string): string {
+    const name = dir.split("/").pop() ?? dir;
+    return `📁 **Project: ${name}**\n\`${dir}\`\n`;
+  }
+
+  // ── /gsd_discuss_phase ────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_discuss_phase",
+    description: "Capture design decisions for a phase. Usage: /gsd_discuss_phase <N>",
+    acceptsArgs: true,
+    requireAuth: false,
+    handler(ctx) {
+      tracerHit("command", "gsd_discuss_phase");
+      const check = requireProject();
+      if ("text" in check) return check;
+      const phase = ((ctx as {args?: string}).args ?? "").trim();
+      if (!phase) return { text: fmt("Usage: `/gsd_discuss_phase <phase-number>`\n\nCapture design decisions and requirements for a phase.") };
+      const snap = runTools("state-snapshot", check.dir) as Record<string, unknown>;
+      const cfg = ((snap as Record<string, unknown>).config ?? {}) as Record<string, unknown>;
+      return {
+        text: fmt([
+          projectHeader(check.dir),
+          `**Discuss Phase ${phase}** — capturing design decisions`,
+          ``,
+          `Milestone: ${cfg.milestone ?? "—"}  |  Status: ${cfg.status ?? "active"}`,
+          ``,
+          `_Use \`gsd:discuss-phase\` skill to capture decisions for phase ${phase}_`,
+        ].join("\n")),
+      };
+    },
+  });
+
+  // ── /gsd_plan_phase ───────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_plan_phase",
+    description: "Plan a phase with research. Usage: /gsd_plan_phase <N>",
+    acceptsArgs: true,
+    requireAuth: false,
+    handler(ctx) {
+      tracerHit("command", "gsd_plan_phase");
+      const check = requireProject();
+      if ("text" in check) return check;
+      const phase = ((ctx as {args?: string}).args ?? "").trim();
+      if (!phase) return { text: fmt("Usage: `/gsd_plan_phase <phase-number>`\n\nPlan a phase by generating implementation plans.") };
+      const snap = runTools("state-snapshot", check.dir) as Record<string, unknown>;
+      const cfg = ((snap as Record<string, unknown>).config ?? {}) as Record<string, unknown>;
+      return {
+        text: fmt([
+          projectHeader(check.dir),
+          `**Plan Phase ${phase}** — generating implementation plans`,
+          ``,
+          `Milestone: ${cfg.milestone ?? "—"}  |  Status: ${cfg.status ?? "active"}`,
+          ``,
+          `_Use \`gsd:plan-phase\` skill to generate plans for phase ${phase}_`,
+        ].join("\n")),
+      };
+    },
+  });
+
+  // ── /gsd_execute_phase ────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_execute_phase",
+    description: "Execute plans in a phase. Usage: /gsd_execute_phase <N>",
+    acceptsArgs: true,
+    requireAuth: false,
+    handler(ctx) {
+      tracerHit("command", "gsd_execute_phase");
+      const check = requireProject();
+      if ("text" in check) return check;
+      const phase = ((ctx as {args?: string}).args ?? "").trim();
+      if (!phase) return { text: fmt("Usage: `/gsd_execute_phase <phase-number>`\n\nExecute plans in a specific phase.") };
+      const snap = runTools("state-snapshot", check.dir) as Record<string, unknown>;
+      const cfg = ((snap as Record<string, unknown>).config ?? {}) as Record<string, unknown>;
+      const progress = ((snap as Record<string, unknown>).progress ?? {}) as Record<string, unknown>;
+      const done = (progress.completed_plans ?? 0) as number;
+      const total = (progress.total_plans ?? 0) as number;
+      return {
+        text: fmt([
+          projectHeader(check.dir),
+          `**Execute Phase ${phase}** — running implementation plans`,
+          ``,
+          `Milestone: ${cfg.milestone ?? "—"}  |  Progress: ${done}/${total} plans done`,
+          ``,
+          `_Use \`gsd:execute-phase\` skill to execute plans for phase ${phase}_`,
+        ].join("\n")),
+      };
+    },
+  });
+
+  // ── /gsd_verify_work ──────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_verify_work",
+    description: "Verify phase deliverables. Usage: /gsd_verify_work <N>",
+    acceptsArgs: true,
+    requireAuth: false,
+    handler(ctx) {
+      tracerHit("command", "gsd_verify_work");
+      const check = requireProject();
+      if ("text" in check) return check;
+      const phase = ((ctx as {args?: string}).args ?? "").trim();
+      if (!phase) return { text: fmt("Usage: `/gsd_verify_work <phase-number>`\n\nVerify deliverables for a completed phase.") };
+      return {
+        text: fmt([
+          projectHeader(check.dir),
+          `**Verify Phase ${phase}** — checking deliverables`,
+          ``,
+          `_Use \`gsd:verify-work\` skill to verify phase ${phase} deliverables_`,
+        ].join("\n")),
+      };
+    },
+  });
+
+  // ── /gsd_new_milestone ────────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_new_milestone",
+    description: "Start a new milestone. Usage: /gsd_new_milestone [version]",
+    acceptsArgs: true,
+    requireAuth: false,
+    handler(ctx) {
+      tracerHit("command", "gsd_new_milestone");
+      const check = requireProject();
+      if ("text" in check) return check;
+      const version = ((ctx as {args?: string}).args ?? "").trim();
+      const snap = runTools("state-snapshot", check.dir) as Record<string, unknown>;
+      const cfg = ((snap as Record<string, unknown>).config ?? {}) as Record<string, unknown>;
+      return {
+        text: fmt([
+          projectHeader(check.dir),
+          `**New Milestone${version ? ": " + version : ""}**`,
+          ``,
+          `Current: ${cfg.milestone ?? "none"}  |  Status: ${cfg.status ?? "—"}`,
+          ``,
+          `_Use \`gsd:new-milestone\` skill to start${version ? " milestone " + version : " the next milestone"}_`,
+        ].join("\n")),
+      };
+    },
+  });
+
   const GSD_COMMANDS = [
     // Utility (Phase 4)
     { command: "gsd_status",              description: "Show GSD project status" },
