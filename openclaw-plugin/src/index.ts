@@ -33,6 +33,18 @@ export default function gsdPlugin(api: PluginContext): void {
       process.env.GSD_HOME = gsdHome;
       api.logger.info("[gsd] GSD_TOOLS_PATH=" + toolsPath);
       api.logger.info("[gsd] GSD_HOME=" + gsdHome);
+      // Restore active project from registry on gateway start
+      try {
+        const registryPath = join(homedir(), ".gsd", "projects.json");
+        const registry = JSON.parse(readFileSync(registryPath, "utf8")) as { projects?: Array<{path: string; active?: boolean; last_active: string}> };
+        const projects = registry.projects ?? [];
+        const active = projects.find(p => p.active === true)
+          ?? [...projects].sort((a, b) => b.last_active.localeCompare(a.last_active))[0];
+        if (active) {
+          process.env.GSD_CURRENT_PROJECT_DIR = active.path;
+          api.logger.info("[gsd] GSD_CURRENT_PROJECT_DIR=" + active.path);
+        }
+      } catch { /* no registry yet, skip */ }
     },
     stop() {
       delete process.env.GSD_TOOLS_PATH;
@@ -40,6 +52,25 @@ export default function gsdPlugin(api: PluginContext): void {
       api.logger.info("[gsd] cleanup complete");
     },
   });
+
+  // ── Active project resolution ─────────────────────────────────────────────
+  // Priority: GSD_CURRENT_PROJECT_DIR env var → active flag in registry → most recent
+
+  function resolveActiveProjectDir(): string {
+    if (process.env.GSD_CURRENT_PROJECT_DIR) return process.env.GSD_CURRENT_PROJECT_DIR;
+    try {
+      const registryPath = join(homedir(), ".gsd", "projects.json");
+      const registry = JSON.parse(readFileSync(registryPath, "utf8")) as { projects?: Array<{name: string; path: string; last_active: string; active?: boolean}> };
+      const projects = registry.projects ?? [];
+      if (projects.length === 0) return process.cwd();
+      const explicit = projects.find(p => p.active === true);
+      if (explicit) return explicit.path;
+      const sorted = [...projects].sort((a, b) => b.last_active.localeCompare(a.last_active));
+      return sorted[0].path;
+    } catch {
+      return process.cwd();
+    }
+  }
 
   // ── Helper: shell out to gsd-tools.cjs (registerTool handlers) ──────────────
   function execGsdTools(subcommand: string): unknown {
@@ -49,7 +80,7 @@ export default function gsdPlugin(api: PluginContext): void {
       const output = execSync(`node "${toolsPath}" ${subcommand}`, {
         encoding: "utf8",
         timeout: 15000,
-        cwd: process.cwd(),
+        cwd: resolveActiveProjectDir(),
       });
       return JSON.parse(output);
     } catch (e) {
@@ -155,21 +186,6 @@ export default function gsdPlugin(api: PluginContext): void {
   function tp(): string {
     return process.env.GSD_TOOLS_PATH
       ?? join(import.meta.dirname, "..", "bin", "gsd-tools.cjs");
-  }
-
-  /** Returns the most recently active GSD project path, or cwd as fallback. */
-  function resolveActiveProjectDir(): string {
-    try {
-      const registryPath = join(homedir(), ".gsd", "projects.json");
-      const registry = JSON.parse(readFileSync(registryPath, "utf8")) as { projects?: Array<{name: string; path: string; last_active: string}> };
-      const projects = registry.projects ?? [];
-      if (projects.length === 0) return process.cwd();
-      // Sort by last_active descending, return the most recently active
-      const sorted = [...projects].sort((a, b) => b.last_active.localeCompare(a.last_active));
-      return sorted[0].path;
-    } catch {
-      return process.cwd();
-    }
   }
 
   /** Execute gsd-tools in the active project directory. */
@@ -495,16 +511,19 @@ export default function gsdPlugin(api: PluginContext): void {
           return { text: `Project not found: **${query}**\n\nRun /gsd_set_project to see options.` };
         }
 
-        // Update last_active to make it the "most recent"
+        // Set active flag + update last_active, persist to registry
         const registryPath = join(homedir(), ".gsd", "projects.json");
-        const registry = JSON.parse(readFileSync(registryPath, "utf8")) as { version: number; projects: Array<{name: string; path: string; added: string; last_active: string}> };
+        const registry = JSON.parse(readFileSync(registryPath, "utf8")) as { version: number; projects: Array<{name: string; path: string; added: string; last_active: string; active?: boolean}> };
         registry.projects = registry.projects.map(p =>
           p.path === match!.path
-            ? { ...p, last_active: new Date().toISOString().slice(0, 10) }
-            : p
+            ? { ...p, active: true, last_active: new Date().toISOString().slice(0, 10) }
+            : { ...p, active: false }
         );
         const { writeFileSync } = require("fs") as typeof import("fs");
         writeFileSync(registryPath, JSON.stringify(registry, null, 2), "utf8");
+
+        // Set env var for immediate effect in this gateway process
+        process.env.GSD_CURRENT_PROJECT_DIR = match.path;
 
         return { text: fmt(`✅ **Active project set:**\n\n**${match.name}**\n${match.path}\n\nRun /gsd_status to confirm.`) };
       } catch (e) {
@@ -523,7 +542,7 @@ export default function gsdPlugin(api: PluginContext): void {
       tracerHit("command", "gsd_cleanup");
       try {
         const { readdirSync, unlinkSync, statSync, existsSync: fsExists } = require("fs") as typeof import("fs");
-        const researchDir = join(process.cwd(), ".planning", "research");
+        const researchDir = join(resolveActiveProjectDir(), ".planning", "research");
         const cleaned: string[] = [];
         if (fsExists(researchDir)) {
           for (const f of readdirSync(researchDir)) {
