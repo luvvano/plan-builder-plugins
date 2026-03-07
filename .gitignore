@@ -1,0 +1,4 @@
+node_modules/
+openclaw-plugin/node_modules/
+dist/
+*.log
