@@ -565,6 +565,77 @@ export default function gsdPlugin(api: PluginContext): void {
     },
   });
 
+  // ── /gsd_current_project ──────────────────────────────────────────────────
+  api.registerCommand({
+    name: "gsd_current_project",
+    description: "Show or set the active GSD project. Usage: /gsd_current_project [name|path]",
+    acceptsArgs: true,
+    requireAuth: false,
+    handler(ctx) {
+      tracerHit("command", "gsd_current_project");
+      const query = ((ctx as {args?: string}).args ?? "").trim();
+
+      if (!query) {
+        // Show current
+        const dir = resolveActiveProjectDir();
+        const name = dir.split("/").pop() ?? dir;
+        const source = process.env.GSD_CURRENT_PROJECT_DIR
+          ? "env var"
+          : "registry (last active)";
+        const hasGsd = existsSync(join(dir, ".planning"));
+        return { text: fmt([
+          `**Current GSD Project**`,
+          ``,
+          `**${name}**`,
+          dir,
+          `Source: ${source}`,
+          hasGsd ? `✅ Has .planning/` : `⚠️ No .planning/ found`,
+          ``,
+          `To switch: /gsd_current_project <name> or /gsd_set_project <name>`,
+        ].join("\n")) };
+      }
+
+      // Set by name — delegate to same logic as gsd_set_project
+      try {
+        const tPath = tp();
+        const raw = execSync(`node "${tPath}" project-list list`, { encoding: "utf8", timeout: 10000 });
+        const result = JSON.parse(raw) as { projects?: Array<{name: string; path: string}> };
+        const projects = result.projects ?? [];
+
+        const indexMatch = query.match(/^#?(\d+)$/);
+        let match: { name: string; path: string } | undefined;
+        if (indexMatch) {
+          match = projects[parseInt(indexMatch[1], 10) - 1];
+        } else {
+          match = projects.find(p =>
+            p.name.toLowerCase().includes(query.toLowerCase()) ||
+            p.path.toLowerCase().includes(query.toLowerCase())
+          );
+        }
+
+        if (!match) {
+          return { text: `Project not found: **${query}**\n\nRun /gsd_project_list to see tracked projects.` };
+        }
+
+        // Persist active flag
+        const registryPath = join(homedir(), ".gsd", "projects.json");
+        const registry = JSON.parse(readFileSync(registryPath, "utf8")) as { version: number; projects: Array<{name: string; path: string; added: string; last_active: string; active?: boolean}> };
+        registry.projects = registry.projects.map(p =>
+          p.path === match!.path
+            ? { ...p, active: true, last_active: new Date().toISOString().slice(0, 10) }
+            : { ...p, active: false }
+        );
+        const { writeFileSync } = require("fs") as typeof import("fs");
+        writeFileSync(registryPath, JSON.stringify(registry, null, 2), "utf8");
+        process.env.GSD_CURRENT_PROJECT_DIR = match.path;
+
+        return { text: fmt(`✅ **Active project:**\n\n**${match.name}**\n${match.path}`) };
+      } catch (e) {
+        return { text: `Error: ${String(e).slice(0, 300)}` };
+      }
+    },
+  });
+
   // ── /gsd_update ───────────────────────────────────────────────────────────
   api.registerCommand({
     name: "gsd_update",
@@ -728,6 +799,7 @@ export default function gsdPlugin(api: PluginContext): void {
     { command: "gsd_update",              description: "Update plugin from GitHub" },
     { command: "gsd_project_list",        description: "List or manage tracked projects" },
     { command: "gsd_set_project",         description: "Set the active GSD project" },
+    { command: "gsd_current_project",     description: "Show or set the current GSD project" },
     { command: "gsd_trace",               description: "Show recent OpenClaw traces" },
     // Workflow (Phase 5)
     { command: "gsd_quick",               description: "Run an ad-hoc GSD task" },
