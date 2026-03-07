@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-04)
 Milestone: v1.1 — Telegram Support (STARTED)
 Phase: 4 of 5 — Not started (defining requirements)
 Status: Milestone initialized, ready for Phase 4 planning
-Last activity: 2026-03-05 — Milestone v1.1 started (Telegram command aliases)
+Last activity: 2026-03-07 — Quick task 6: Add project env var validation to GSD workflow Telegram commands
 
 Progress: [░░░░░░░░░░] 0% (0/5 plans)
 
@@ -102,6 +102,7 @@ None.
 | 1 | Update README.md with installation guide for OpenClaw environment | 2026-03-05 | c54279f | [1-update-readme-md-so-it-will-contain-inst](./quick/1-update-readme-md-so-it-will-contain-inst/) |
 | 2 | Add gsd:project-list command — persistent project tracking | 2026-03-05 | 6d9295d | [2-add-gsd-project-list-command](./quick/2-add-gsd-project-list-command/) |
 | 3 | Add gsd:update command — pull latest plugin from git and reinstall | 2026-03-05 | de0fffa | [3-add-gsd-update-command-to-pull-latest-pl](./quick/3-add-gsd-update-command-to-pull-latest-pl/) |
+| 6 | Add project env var validation to GSD workflow Telegram commands | 2026-03-07 | 01e385c0 | [6-add-project-env-var-validation-to-gsd-wo](./quick/6-add-project-env-var-validation-to-gsd-wo/) |
 
 ### Blockers/Concerns
 
